@@ -14,7 +14,18 @@ $ java -Xmx2G -cp ~/bin/Trimmomatic-0.32/trimmomatic-0.32.jar org.usadellab.trim
 
 2) Mapping with Bismark
 
+$ bismark --bowtie2 -p 4 -o $o /home/Shared/data/annotation/_Archive/Human/genome/GRCH37 -1 sample1_R1_t20l20_paired.fastq.gz -2 sample1_R2_t20l20_paired.fastq.gz
+
 3) Duplicate Removal
+
+$  deduplicate_bismark  -p sample1_R1_paired.fastq.gz_bismark_bt2_pe.sam
+
+4) Use methylation extractor to get per CpG coverage and methylation information
+
+$ bismark_methylation_extractor -p --comprehensive sample1_R1_paired.fastq.gz_bismark_bt2_pe.deduplicated.sam
+
+$ bismark2bedGraph --counts -o sample1_R1_paired.fastq.gz_bismark_bt2_pe.deduplicated.bedGraph CpG_context_sample1_R1_paired.fastq.gz_bismark_bt2_pe.deduplicated.txt
+
 
 4) Methylation Bias
 
