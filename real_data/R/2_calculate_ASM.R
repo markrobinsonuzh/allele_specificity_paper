@@ -1,4 +1,4 @@
-# We calculate the ASM score for each tuple across the samples and transform the ASM scores with a square root transformation.
+# We calculate the ASM score for each tuple across the samples and transform the ASM scores with a square root transformation. The final matrix is called the sm matrix. It has the tuples sorted by position of the median per tuple.
 
 library(parallel)
 library(data.table)
@@ -53,6 +53,48 @@ for (i in 1:length(real_data)) {
 }
 
 # save(real_score_matrix, file="real_score_matrix.rda")
+
+# nrow(real_score_matrix)
+# [1] 2468506
+
+# remove the positions where all the normal samples have NA values or all the adenoma samples have NA values and store as sm matrix
+
+n <- grep("normal", colnames(real_score_matrix))
+a <- grep("adenoma", colnames(real_score_matrix))
+
+norm_scores <- real_score_matrix[,n]
+w_n <- which(rowSums(is.na(norm_scores))==3)
+
+adenoma_scores <- real_score_matrix[,a]
+w_a <- which(rowSums(is.na(adenoma_scores))==10)
+
+sm <- real_score_matrix[c(-w_n,-w_a),] 
+
+# nrow(sm)
+# [1] 1638587
+
+# set median of each tuple as the genomic position
+pos <- rownames(sm)
+chr <- limma::strsplit2(pos, ".", fixed=T)[,1]
+pos1 <- as.numeric(limma::strsplit2(pos, ".", fixed=T)[,2])
+pos2 <- as.numeric(limma::strsplit2(pos, ".", fixed=T)[,3])
+midpt <- floor((pos2 - pos1)/2)
+median_pos <- pos1 + midpt
+
+# sort the score matrix by chr and median position (important for regionFinder and bumphunting)
+pos_df <- data.frame(chr=chr, pos=median_pos)
+o <- order(pos_df[,"chr"], pos_df[,"pos"])
+sm <- sm[o,]
+median_pos <- median_pos[o]
+chr <- chr[o]
+
+# save the sm matrix
+save(sm, file="real_sm.rda")
+
+# transform the ASM scores. We do this to have a more stable mean-variance relationship when we use limma in a later step.
+
+
+
 
 
 
