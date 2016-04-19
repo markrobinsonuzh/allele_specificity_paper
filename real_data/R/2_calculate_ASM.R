@@ -52,7 +52,7 @@ for (i in 1:length(real_data)) {
   real_score_matrix[ind_m,i] <- df$ASM_score[ind]
 }
 
-
+# save(real_score_matrix, file="real_score_matrix.rda")
 
 
 
