@@ -1,0 +1,29 @@
+# We run amrfinder and allelicmeth on every sample.
+# We use sample1 as an example file name.
+# We followed the commands provided by the authors of the tool in the methpipe manual. 
+# The sam files need to converted to epiread files to be able to run amrfinder and allelicmeth
+# methpipe version: 3.3.1
+
+
+
+# convert sam files to mr files 
+$ to-mr -m bismark -o sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr sample1_R1_paired.fastq.gz_bismark_bt2_pe.sam.gz -v
+
+# sort mr files 
+$ export LC_ALL=C; sort -k1,1 -k2,2n -k3,3n -k6,6 sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr | grep -a "^chr" > sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr.sorted
+
+# remove duplicate reads 
+$ duplicate-remover -S sample1_R1_paired.fastq.gz_bismark_bt2_pe_dremove_stat.txt -o sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr.sorted.dremove sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr.sorted
+
+# convert to epiread files
+$ methstates -c /home/Shared/data/seq/bisulphite_mirco/FASTQ/genome -o sample1_R1_paired.fastq.gz_bismark_bt2_pe.epiread sample1_R1_paired.fastq.gz_bismark_bt2_pe.mr.sorted.dremove
+
+# run amrfinder
+$ amrfinder -o sample_R1_paired.fastq.gz_bismark_bt2_pe.amr -c /home/Shared/data/seq/bisulphite_mirco/FASTQ/genome sample1_R1_paired.fastq.gz_bismark_bt2_pe.epiread
+
+# store amr files as bed files
+$ cat sample1_R1_paired.fastq.gz_bismark_bt2_pe.amr | awk '{ print $1 "\t" $2 "\t" $3}' > sample1_R1_paired.fastq.gz_bismark_bt2_pe.amr.bed
+
+# run allelicmeth
+$ allelicmeth -c /home/Shared/data/seq/bisulphite_mirco/FASTQ/genome -o sample1_R1_t20l20_paired.fastq.gz_bismark_bt2_pe.allelicmeth sample1_R1_t20l20_paired.fastq.gz_bismark_bt2_pe.epiread -v
+
