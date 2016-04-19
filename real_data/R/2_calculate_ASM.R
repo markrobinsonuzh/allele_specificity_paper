@@ -99,7 +99,7 @@ for (i in 1:ncol(sm_t)) {
   sm_t[,i] <- modulus_sqrt(sm[,i])
 }
 
-save(sm_t, file="rael_sm_transformed.rda")
+save(sm_t, file="real_sm_transformed.rda")
 
 
 
