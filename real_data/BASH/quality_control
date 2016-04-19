@@ -1,4 +1,5 @@
-# We do quality control using the fastqc command from the terminal. The following commands are done in BASH on each sample. We use sample1 as an example: with sample1_R1.fastq and sample1_R2.fastq files.
+# We do quality control using the fastqc command from the terminal. The following commands are done in BASH on each sample. 
+# We use sample1 as an example: with sample1_R1.fastq and sample1_R2.fastq files.
 
 
 # Run fastqc of forward (R1) and revers (R2) reads of the PE reads
