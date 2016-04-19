@@ -10,6 +10,14 @@ library(bumphunter)
 
 ############################################################
 
+# The tuples in sm_t are already sorted by the median of the two CpG positions
+# The rownames contain the chr, pos1, and pos2 per ASM score in the matrix
+rows <- rownames(sm_t)
+chr <- limma::strsplit2(rows, ".", fixed=T)[,1]
+pos1 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,2])
+pos2 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,3])
+midpt <- floor((pos2 - pos1)/2)
+pos <- pos1 + midpt
 
 
 
