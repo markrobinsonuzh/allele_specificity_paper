@@ -1,1 +1,3 @@
-# We map to the reference genome hg19 using bismark.
+# We map to the reference genome hg19 using bismark. The following commands are done in BASH from the terminal.
+
+# 
