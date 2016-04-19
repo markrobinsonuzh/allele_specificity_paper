@@ -1,0 +1,1 @@
+# We map to the reference genome hg19 using bismark.
