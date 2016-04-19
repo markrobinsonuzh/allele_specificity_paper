@@ -1,4 +1,4 @@
-# We calculate the ASM score for each tuple across the samples and transform the ASM scores with a square root transformation. The final matrix is called the sm matrix. It has the tuples sorted by position of the median per tuple.
+# We calculate the ASM score for each tuple across the samples and transform the ASM scores with a square root transformation. The final matrix is called the sm_t matrix. It has the tuples sorted by position of the median per tuple and contains the transformed ASM scores.
 
 library(parallel)
 library(data.table)
@@ -92,6 +92,14 @@ chr <- chr[o]
 save(sm, file="real_sm.rda")
 
 # transform the ASM scores. We do this to have a more stable mean-variance relationship when we use limma in a later step.
+sm_t <- matrix(data=NA, nrow=nrow(sm), ncol=ncol(sm))
+colnames(sm_t) <- colnames(sm)
+rownames(sm_t) <- rownames(sm)
+for (i in 1:ncol(sm_t)) {
+  sm_t[,i] <- modulus_sqrt(sm[,i])
+}
+
+save(sm_t, file="rael_sm_transformed.rda")
 
 
 
@@ -145,6 +153,13 @@ calcScore <- function(beta, a, df) {
   score_vector <- df$log_odds_ratio*weights
   return(score_vector)
   
+}
+
+# modulus sqrt function to  transform the data 
+modulus_sqrt <- function(values) {
+  t_values <- abs(values)
+  ret <- sign(values)*sqrt(t_values)
+  return(ret)
 }
 
 
