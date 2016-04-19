@@ -1,6 +1,6 @@
 ## ASM Score and DAMEfinder
 
-We present the Allele-Specific Methylation (ASM) score and the Differential Allele-specific MEthylation finder (DAMEfinder). The ASM score reflects a measure of ASM on a CpG tuple basis using methylation counts of the tuple: MM, MU, UM, and UU, where M stands for methylated and U stands for unmethylated. DAMEfinder uses the ASM score along with the bump hunting approach to detect regions that are differetnially allele-specifically methylated (DAMEs).
+We present the Allele-Specific Methylation (ASM) score and the Differential Allele-specific MEthylation finder (DAMEfinder). The ASM score reflects a measure of ASM on a CpG tuple basis using methylation counts of the tuple: MM, MU, UM, and UU, where M stands for methylated and U stands for unmethylated. DAMEfinder uses the ASM score along with the bump hunting approach to detect regions that are Differetnially Allele-specifically MEthylated (DAMEs).
 
 The directories:
 
