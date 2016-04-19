@@ -24,7 +24,7 @@ for (i in 1:length(real_data)) {
   real_data[[i]] <- df
 }
 
-save(real_data, file="real_data.rda")
+# save(real_data, file="real_data.rda")
 
 # get key of unique tuples
 all_pos <- do.call("rbind", real_data)
@@ -35,6 +35,22 @@ key <- unique(key)
 # length(key)
 # [1] 2468506
 
+# get matrix of ASM scores across all samples
+real_score_matrix <- matrix(data=NA, nrow=length(key), ncol=length(real_data))
+colnames(real_score_matrix) <- paste0(names(real_data), c("-normal", "-normal", "-adenoma", 
+                                                          "-adenoma", "-adenoma", "-adenoma", 
+                                                          "-adenoma", "-adenoma", "-adenoma", 
+                                                          "-adenoma", "-adenoma", "-normal",
+                                                          "-adenoma"))
+rownames(real_score_matrix) <- key
+for (i in 1:length(real_data)) {
+  df <- real_data[[i]]
+  key_s <- paste0(df$chr, '.', df$pos1, '.', df$pos2)
+  m <- match(key, key_s)
+  ind <- m[which(!is.na(m))]
+  ind_m <- which(!is.na(m))
+  real_score_matrix[ind_m,i] <- df$ASM_score[ind]
+}
 
 
 
