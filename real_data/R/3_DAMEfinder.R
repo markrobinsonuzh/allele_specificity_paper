@@ -47,10 +47,51 @@ dames <- regionFinder(x = smoothed_beta, chr = chr, pos = pos, cluster = pns,
 
 save(dames, file="real_DAMEs.rda")
 
+# number of regions DAMEfinder detects
+# nrow(dames)
+# [1] 22609
+
 # Calculate a FDR using the null distribution of the premuted results (estimated FDR from permutaiton tests)
 # We permute the labels of the samples on the smt_t matrix
 
-# Get list of all possible permutations and remove the true one
+# Get list of all possible permutations and remove the true one (We have 13 samples, 3 of which are normal_crypts)
+combs <- combn(13, 3)
+perm_list <- list()
+for (i in 1:ncol(combs)) {
+  v <- rep(1,13)
+  v[combs[,i]] <- 0
+  perm_list[[i]] <- v
+}
+w <- sapply(perm_list, function(x){all(x==c(0,0,1,1,1,1,1,1,1,1,1,0,1))}) 
+w <- which(w==TRUE)
+perm_list <- perm_list[-w]
+
+# create a function that returns DAMEs given a permutation
+pred_dames <- function(p) {
+  # set design matrix
+  mod <- matrix(data=c(rep(1,13),p), ncol = 2)
+  # get t-stats
+  fit <- limma::lmFit(sm_t, mod)
+  fit2 <- limma::eBayes(fit, proportion = 0.01)
+  beta <- fit2$t[, coeff]
+  # do smoothing
+  smooth <- smoother(y = beta, x = pos, cluster = pns, smoothFunction = loessByCluster, 
+                    verbose = verbose)
+  smoothed_beta <- smooth$fitted
+  # predict regions
+  dames <- regionFinder(x = smoothed_beta, chr = chr, pos = pos, cluster = pns, 
+                        cutoff = quantile(abs(smoothed_beta),Q, na.rm=T), verbose = verbose)
+  return(dames)
+}
+
+# Get observed DAMRs (true label)
+obs_dames <- pred_dames(c(0,0,1,1,1,1,1,1,1,1,1,0,1))
+
+# Get DAMEs with rest of permutations
+perm_dames <- mclapply(perm_list, pred_dames, mc.cores=10)
+
+
+
 
 
 
