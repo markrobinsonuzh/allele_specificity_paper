@@ -46,3 +46,13 @@ dames <- regionFinder(x = smoothed_beta, chr = chr, pos = pos, cluster = pns,
                       cutoff = quantile(abs(smoothed_beta),Q, na.rm=T), verbose = verbose)
 
 save(dames, file="real_DAMEs.rda")
+
+# Calculate a FDR using the null distribution of the premuted results (estimated FDR from permutaiton tests)
+# We permute the labels of the samples on the smt_t matrix
+
+# Get list of all possible permutations and remove the true one
+
+
+
+
+
