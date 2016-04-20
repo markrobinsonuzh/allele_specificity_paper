@@ -90,6 +90,29 @@ obs_dames <- pred_dames(c(0,0,1,1,1,1,1,1,1,1,1,0,1))
 # Get DAMEs with rest of permutations
 perm_dames <- mclapply(perm_list, pred_dames, mc.cores=10)
 
+# get values of the areas (measure of significance) of each region
+perm_areas <- list()
+for (i in 1:length(perm_dames)){
+  perm_areas[[i]] <- perm_dames[[i]]$area
+}
+
+# calculate estimated p_value
+# they are in order (lowest to highest) since the regions are soretd by area already
+all_perm_areas <- unlist(perm_areas)
+total_perm_areas <- length(all_perm_areas)
+obs_dames$empirical_p_value <- rep(NA, nrow(obs_dames))
+for (i in 1:nrow(obs_dames)) {
+  w <- length(!is.na(which(obs_dames$area[i]>=all_perm_areas)))
+  p <- (total_perm_areas-w)/total_perm_areas
+  obs_dames[i,"empirical_p_value"] <- p
+} 
+
+save(obs_dames, file="real_DAMEs_with_fdr.rda")
+
+# get list of DAMEs that have p-value <= 0.05
+w <- which(obs_dames$empirical_p_value<=0.05)
+obs_dames_fdr_0_0_5 <- obs_dames[w,]
+save(obs_dames_fdr_0_0_5, file = "real_DAMEs_with_fdr_0_pt_0_5.rda")
 
 
 
