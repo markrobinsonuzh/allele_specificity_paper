@@ -2,7 +2,7 @@
 # Figure 10
 
 # load damr_cov_matrix 
-load("methylation_matrix.rda")
+load("../data/methylation_matrix.rda")
 
 library(bumphunter)
 
@@ -29,7 +29,8 @@ plot_pns <- clusterMaker(chr = plot_chr, pos = plot_pos, maxGap = 300)
 
 smooth <-  locfitByCluster(damr_cov_matrix, x = plot_pos, cluster = plot_pns)
 
-pdf("./with_bumphunter_package/dame_plots/dame_chr8_marginal_methylation.pdf", w=10, h=8)
+
+pdf("../figures/dame_chr8_marginal_methylation.pdf", w=10, h=8)
 plot(plot_pos, smooth$fitted[,1], type='l', col='blue', ylim=c(0,100), lwd=2, 
      main = "Marginal Methylation", xlab = "Position on chr8", ylab = "Percent Methylation")
 for (i in c(2,12)) {
@@ -49,26 +50,7 @@ for (i in c(3,4,5,6,7,8,9,10,11,13)) {
 # Shade the DAMR
 w <- which(plot_pos >= damr_start & plot_pos <= damr_end)
 meth_pos <- plot_pos[w]
-
-# df <- as.data.frame(damr_cov_matrix)
-# colnames(df) <- limma::strsplit2(colnames(df),"-")[,2]
-# df$pos <- plot_pos
-
-# library(reshape2)
-# df.m <- melt(df,id.vars='pos', measure.vars=c('normal','Freq.1','Freq.2'))
-
-# p <- ggplot(mry, aes(x=pos, y=, group=rating))
-# p + geom_line()
-
-
 polygon(c(meth_pos[1], meth_pos, meth_pos[length(meth_pos)]), c(0,rep(100, length(meth_pos)),0), 
         col=rgb(1, 0, 0,0.1), border=NA)
-
-
 dev.off()
-
-
-
-
-
 
