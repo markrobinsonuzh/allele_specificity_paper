@@ -6,9 +6,9 @@ load("../data/methylation_matrix.rda")
 
 library(bumphunter)
 
-damr_chr <- "chr8"
-damr_start <- 141108266 
-damr_end <- 141111068
+dame_chr <- "chr8"
+dame_start <- 141108266 
+dame_end <- 141111068
 
 # parameters for smoothing
 plot_chr <- rep(damr_chr, nrow(damr_cov_matrix))
@@ -48,7 +48,7 @@ for (i in c(3,4,5,6,7,8,9,10,11,13)) {
 }
 
 # Shade the DAMR
-w <- which(plot_pos >= damr_start & plot_pos <= damr_end)
+w <- which(plot_pos >= dame_start & plot_pos <= dame_end)
 meth_pos <- plot_pos[w]
 polygon(c(meth_pos[1], meth_pos, meth_pos[length(meth_pos)]), c(0,rep(100, length(meth_pos)),0), 
         col=rgb(1, 0, 0,0.1), border=NA)
