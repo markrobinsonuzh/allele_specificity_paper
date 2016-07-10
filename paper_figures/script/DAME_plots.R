@@ -34,7 +34,7 @@ plot_1 <- function() {
   load("../data/asm_matrix.rda")
   
   # the rownames of the matrix are called as follows: chr.pos1.pos2
-  rows <- rownames(sm)
+  rows <- rownames(asm_matrix)
   asm_chr <- limma::strsplit2(rows, ".", fixed=T)[,1]
   asm_pos1 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,2])
   asm_pos2 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,3])
