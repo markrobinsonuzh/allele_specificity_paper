@@ -17,6 +17,10 @@ par(mfrow=c(4,1))
 
 plot_1()
 plot_2()
+plot_3()
+plot_4()
+
+dev.off()
 
 
 
@@ -195,6 +199,55 @@ plot_3 <- function() {
   
 }
 
+## plot 4: plot marginal methylation (t-statistics)
 
-
+plot_4 <- function() {
+  # load damr_cov_matrix 
+  load("../data/methylation_matrix.rda")
+  
+  # parameters for smoothing
+  plot_chr <- rep(dame_chr, nrow(damr_cov_matrix))
+  plot_pos <- as.numeric(limma::strsplit2(rownames(damr_cov_matrix), 'chr8.')[,2])
+  
+  # sort the positions
+  o <- order(plot_pos)
+  plot_pos <- plot_pos[o]
+  plot_start <- plot_pos[1]
+  plot_end <- plot_pos[length(plot_pos)]
+  
+  damr_cov_matrix <- damr_cov_matrix[o,]
+  
+  plot_pns <- clusterMaker(chr = plot_chr, pos = plot_pos, maxGap = 300)
+  
+  # use the smoothing function from bumphunter to get smoothed methylation estimates
+  # this is just to help visualize the marginal methylation per sample
+  
+  smooth <-  smoother(y = damr_cov_matrix, x = plot_pos, cluster = plot_pns, smoothFunction = locfitByCluster)
+  
+  plot(plot_pos, smooth$fitted[,1], type='l', col='blue', ylim=c(0,100), lwd=2, 
+       xlab = "Position on chr8", ylab = "Percent Methylation")
+  for (i in c(2,12)) {
+    lines(plot_pos, smooth$fitted[,i], col='blue', lwd=2)
+  }
+  for (i in c(3,4,5,6,7,8,9,10,11,13)) {
+    lines(plot_pos, smooth$fitted[,i], col='red', lwd=2)
+  }
+  
+  for (i in c(1,2,12)) {
+    points(plot_pos, damr_cov_matrix[,i], pch=20, cex=0.5, col='blue')
+  }
+  for (i in c(3,4,5,6,7,8,9,10,11,13)) {
+    points(plot_pos, damr_cov_matrix[,i], pch=20, cex=0.5, col='red')
+  }
+  
+  # Shade the DAMR
+  w <- which(plot_pos >= dame_start & plot_pos <= dame_end)
+  meth_pos <- plot_pos[w]
+  polygon(c(meth_pos[1], meth_pos, meth_pos[length(meth_pos)]), c(0,rep(100, length(meth_pos)),0), 
+          col=rgb(1, 0, 0,0.1), border=NA)
+  # add legend
+  legend(x = 141106200, y = 40, c("normal", "adenoma"), 
+         lwd = c(2,2), col = c('blue', 'red'), bty = 'n')
+  
+}
 
