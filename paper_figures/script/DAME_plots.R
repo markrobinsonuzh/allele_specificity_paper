@@ -16,6 +16,7 @@ pdf(""../figures/DAME_plots.pdf", w=10, h=4)
 par(mfrow=c(4,1))
 
 plot_1()
+plot_2()
 
 
 
@@ -60,7 +61,7 @@ plot_1 <- function() {
   i_n <- grep("normal", asm_cols)
   i_a <- grep("adenoma", asm_cols)
   
-  plot(asm_pos, asm_matrix[,1], type='l', col='blue', ylim=c(min_y, max_y), xlab = 'Position on Chromosome 8', ylab = 'ASM Score')
+  plot(asm_pos, asm_matrix[,1], type='l', col='blue', ylim=c(min_y, max_y), xlab = '', ylab = 'ASM Score')
   for (i in i_n[-1]) {
     lines(asm_pos, asm_matrix_s[,i], col='blue')
   }
@@ -81,3 +82,58 @@ plot_1 <- function() {
           col=rgb(1, 0, 0,0.05), border=NA)
 
 }
+
+## plot 2: transformed ASM scores (assumes plot_1 has already run)
+
+plot_2 <- function() {
+  
+  # get the ASM_transformed matrix
+  modulus_sqrt <- function(values) {
+    t_values <- abs(values)
+    ret <- sign(values)*sqrt(t_values)
+    return(ret)
+  }
+  
+  asm_t_matrix <- matrix(data=NA, nrow=nrow(asm_matrix), ncol=ncol(asm_matrix))
+  colnames(asm_t_matrix) <- colnames(asm_matrix)
+  rownames(asm_t_matrix) <- rownames(asm_matrix)
+  for (i in 1:ncol(asm_t_matrix)) {
+    asm_t_matrix[,i] <- modulus_sqrt(asm_matrix[,i])
+  }
+  
+  # Smooth the ASM scores to plot, with lowess by cluster
+  pns <- clusterMaker(asm_chr, asm_pos, maxGap = 300)
+  smooth <-  smoother(y = asm_t_matrix, x = asm_pos, cluster = pns, smoothFunction = locfitByCluster)
+  asm_t_matrix_s <- smooth$fitted
+  
+  # plot the ASM scores across samples
+  max_y <- max(asm_t_matrix[!is.na(asm_t_matrix)])
+  min_y <- min(asm_t_matrix[!is.na(asm_t_matrix)])
+  
+  plot(asm_pos, asm_t_matrix_s[,1], type='l', col='blue', ylim=c(max_y,min_y), xlab = '', ylab = 'Transformed ASM Score')
+  for (i in i_n[-1]) {
+    lines(asm_pos, asm_t_matrix_s[,i], col='blue')
+  }
+  for (i in i_a) {
+    lines(asm_pos, asm_t_matrix_s[,i], col='red')
+  }
+  for (i in i_n) {
+    points(asm_pos, asm_t_matrix[,i], pch=20, cex=0.5, col='blue')
+  }
+  for (i in i_a) {
+    points(asm_pos, asm_t_matrix[,i], pch=20, cex=0.5, col='red')
+  }
+  
+  # Shade the DAMR
+  w <- which(asm_pos>=dame_start & asm_pos<=dame_end)
+  polygon(c(asm_pos[w][1], asm_pos[w], asm_pos[w][length(asm_pos[w])]), 
+          c(min_y,rep(max_y, length(asm_pos[w])),min_y), 
+          col=rgb(1, 0, 0,0.05), border=NA)
+}
+
+## plot 3: plot beta values (t-statistics)
+
+
+
+
+
