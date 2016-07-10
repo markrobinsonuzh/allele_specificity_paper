@@ -65,12 +65,12 @@ plot_1 <- function() {
   i_n <- grep("normal", asm_cols)
   i_a <- grep("adenoma", asm_cols)
   
-  plot(asm_pos, asm_matrix[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(min_y, max_y), xlab = '', ylab = 'ASM Score')
+  plot(asm_pos, asm_matrix[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(min_y, max_y), xlab = '', ylab = 'ASM Score', lwd=2)
   for (i in i_n[-1]) {
-    lines(asm_pos, asm_matrix_s[,i], col='blue')
+    lines(asm_pos, asm_matrix_s[,i], col='blue', lwd = 2)
   }
   for (i in i_a) {
-    lines(asm_pos, asm_matrix_s[,i], col='red')
+    lines(asm_pos, asm_matrix_s[,i], col='red', lwd = 2)
   }
   for (i in i_n) {
     points(asm_pos, asm_matrix[,i], pch=20, cex=0.5, col='blue')
@@ -84,6 +84,10 @@ plot_1 <- function() {
   polygon(c(asm_dame_pos[1], asm_dame_pos, asm_dame_pos[length(asm_dame_pos)]), 
           c(min_y,rep(max_y, length(asm_dame_pos)),min_y), 
           col=rgb(1, 0, 0,0.05), border=NA)
+          
+  # add legend
+  legend(x = x_start, y = 3, c("normal", "adenoma"), 
+         lwd = c(2,2), col = c('blue', 'red'), bty = 'n')
 
 }
 
@@ -114,12 +118,12 @@ plot_2 <- function() {
   max_y <- max(asm_t_matrix[!is.na(asm_t_matrix)])
   min_y <- min(asm_t_matrix[!is.na(asm_t_matrix)])
   
-  plot(asm_pos, asm_t_matrix_s[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(max_y,min_y), xlab = '', ylab = 'Transformed ASM Score')
+  plot(asm_pos, asm_t_matrix_s[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(min_y,max_y), xlab = '', ylab = 'Transformed ASM Score', lwd=2)
   for (i in i_n[-1]) {
-    lines(asm_pos, asm_t_matrix_s[,i], col='blue')
+    lines(asm_pos, asm_t_matrix_s[,i], col='blue', lwd = 2)
   }
   for (i in i_a) {
-    lines(asm_pos, asm_t_matrix_s[,i], col='red')
+    lines(asm_pos, asm_t_matrix_s[,i], col='red', lwd = 2)
   }
   for (i in i_n) {
     points(asm_pos, asm_t_matrix[,i], pch=20, cex=0.5, col='blue')
@@ -133,6 +137,11 @@ plot_2 <- function() {
   polygon(c(asm_pos[w][1], asm_pos[w], asm_pos[w][length(asm_pos[w])]), 
           c(min_y,rep(max_y, length(asm_pos[w])),min_y), 
           col=rgb(1, 0, 0,0.05), border=NA)
+
+  # add legend
+  legend(x = x_start, y = 1.5, c("normal", "adenoma"), 
+         lwd = c(2,2), col = c('blue', 'red'), bty = 'n')
+
 }
 
 ## plot 3: plot beta values (t-statistics)
