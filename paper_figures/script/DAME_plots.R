@@ -137,6 +137,54 @@ plot_2 <- function() {
 
 ## plot 3: plot beta values (t-statistics)
 
+plot_3 <- function() {
+  
+  # the cutoff value is obtained using all the loci of the real data set.
+  # load the beta value vector of the real data set
+  load("..data/real_beta.rda")
+  
+  names <- names(beta)
+  beta_chr <- limma::strsplit2(names, ".", fixed=T)[,1]
+  beta_pos1 <- as.numeric(limma::strsplit2(names, ".", fixed=T)[,2])
+  beta_pos2 <- as.numeric(limma::strsplit2(names, ".", fixed=T)[,3])
+  beta_midpt <- floor((pos2 - pos1)/2)
+  beta_pos <- beta_pos1 + beta_midpt
+  
+  # load smoothed beta values
+  load("../data/real_beta_smoothed.rda")
+  
+  which_beta <- which(beta_chr==dame_chr & beta_pos >= x_start & beta_pos <= x_end)
+  beta_pos_p <- beta_pos[which_beta]
+  beta_chr_p <- beta_chr[which_beta]
+  beta_p <- beta[which_beta]
+  smoothed_beta_p <- smoothed_beta[which_beta]
+  
+  # set cutoff using all beta values
+  Q <- 0.9
+  cutoff = quantile(abs(smoothed_beta),Q, na.rm=T)
+  
+  # plot beta and smoothed beta
+  y_values <- beta_p[which(!is.na(beta_p))]
+  max_y <- max(y_values, cutoff)
+  min_y <- min(y_values, -cutoff)
+
+  plot(beta_pos_p, beta_p, xlim = c(x_start, x_end), ylim=c(min_y, max_y), type = 'l', 
+       col = 'orange4', xlab = '', ylab = 't-Statistics', lwd = 2)
+  lines(beta_pos_p, smoothed_beta_p, col = 'darkgreen', lwd = 2)
+  abline(h = cutoff, col = 'black', lwd = 2)
+  abline(h = -cutoff, col = 'black', lwd = 2)
+  
+  # Shade the DAMR
+  which_dame <- which(beta_pos_p>=dame_start & beta_pos_p<=dame_end)
+  polygon(c(beta_pos_p[which_dame][1], beta_pos_p[which_dame], beta_pos_p[which_dame][length(beta_pos_p[which_dame])]), 
+          c(min_y,rep(max_y, length(beta_pos_p[which_dame])),min_y), 
+          col=rgb(1, 0, 0,0.05), border=NA)
+  
+  # add legend
+  legend(x = x_start, y = -50, c("t-Statistic", "Smoothed t-Statistic", "Cutoff"), 
+         lwd = c(2,2,2), col = c('orange4', 'darkgreen', 'black'), bty = 'n')
+  
+}
 
 
 
