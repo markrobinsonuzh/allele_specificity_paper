@@ -45,6 +45,10 @@ plot_1 <- function() {
   asm_pos <- asm_pos[o]
   asm_chr <- asm_chr[o]
   
+  # set x limits for all figures
+  x_start <- min(asm_pos)
+  x_end <- max(asm_pos)
+
   # the column names in the matrix indicate the type and number of each sample
   asm_cols <- colnames(asm_matrix)
   
@@ -61,7 +65,7 @@ plot_1 <- function() {
   i_n <- grep("normal", asm_cols)
   i_a <- grep("adenoma", asm_cols)
   
-  plot(asm_pos, asm_matrix[,1], type='l', col='blue', ylim=c(min_y, max_y), xlab = '', ylab = 'ASM Score')
+  plot(asm_pos, asm_matrix[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(min_y, max_y), xlab = '', ylab = 'ASM Score')
   for (i in i_n[-1]) {
     lines(asm_pos, asm_matrix_s[,i], col='blue')
   }
@@ -110,7 +114,7 @@ plot_2 <- function() {
   max_y <- max(asm_t_matrix[!is.na(asm_t_matrix)])
   min_y <- min(asm_t_matrix[!is.na(asm_t_matrix)])
   
-  plot(asm_pos, asm_t_matrix_s[,1], type='l', col='blue', ylim=c(max_y,min_y), xlab = '', ylab = 'Transformed ASM Score')
+  plot(asm_pos, asm_t_matrix_s[,1], type='l', col='blue', xlim=c(x_start, x_end), ylim=c(max_y,min_y), xlab = '', ylab = 'Transformed ASM Score')
   for (i in i_n[-1]) {
     lines(asm_pos, asm_t_matrix_s[,i], col='blue')
   }
