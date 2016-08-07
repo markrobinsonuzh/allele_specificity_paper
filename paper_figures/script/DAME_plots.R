@@ -91,6 +91,24 @@ plot_4()
 
 dev.off()
 
+### Each figure separately
+
+pdf("../figures/dame_plot_1.pdf", w=10, h=4)
+plot_1()
+dev.off()
+
+pdf("../figures/dame_plot_2.pdf", w=10, h=4)
+plot_2()
+dev.off()
+
+pdf("../figures/dame_plot_3.pdf", w=10, h=4)
+plot_3()
+dev.off()
+
+pdf("../figures/dame_plot_4.pdf", w=10, h=4)
+plot_4()
+dev.off()
+
 ### Functions:
 
 ## plot 1: plots ASM scores
