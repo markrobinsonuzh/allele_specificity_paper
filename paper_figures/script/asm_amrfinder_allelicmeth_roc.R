@@ -6,7 +6,7 @@ load("../data/allelicmeth_amr_asm_roc_plot_pure.rda")
 
 # plot ROC curves
 
-pdf(file = "./roc_amrfinder_allelicmeth_asm_score.pdf", w=10, h=8)
+pdf(file = "../figures/roc_amrfinder_allelicmeth_asm_score.pdf", w=10, h=8)
 
 pred_amr <- prediction(roc_plot_list_2[[1]]$amr_score, roc_plot_list_2[[1]]$label)
 pred_allelicmeth <- prediction(roc_plot_list_2[[1]]$allelicmeth_score, roc_plot_list_2[[1]]$label)
