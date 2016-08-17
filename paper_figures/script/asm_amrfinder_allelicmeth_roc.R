@@ -37,7 +37,7 @@ for (i in 2:3) {
 }
 
 abline(0,1,col='black')
-legend(0.6,0.4,c('amrfinder', 'allelicmeth', 'ASM score'), lty=c(1,1), col=c('darkgreen', 'darkred', 'darkblue'))
+legend(0.6,0.4,c('amrfinder', 'allelicmeth', 'ASM score'), lty=c(1,1), lwd=2, cex=2, col=c('darkgreen', 'darkred', 'darkblue'))
 
 dev.off()
 
