@@ -1,5 +1,7 @@
 # Plot ROC curves for pure and noisy simulated data, comparing amrfinder, allelicmeth, and the ASM score.
 
+library("ROCR")
+
 # Pure data
 
 load("../data/allelicmeth_amr_asm_roc_plot_pure.rda")
