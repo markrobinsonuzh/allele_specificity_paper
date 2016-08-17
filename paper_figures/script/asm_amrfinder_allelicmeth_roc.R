@@ -2,7 +2,7 @@
 
 # Pure data
 
-load("allelicmeth_amr_asm_roc_plot_pure.rda")
+load("../data/allelicmeth_amr_asm_roc_plot_pure.rda")
 
 # plot ROC curves
 
