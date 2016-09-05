@@ -1,6 +1,6 @@
 ## Figure 7 -- bsseq vs DAMEfinder
 ## Data: Adenoma data set
-## rda files needed: "bsseq_DAMEfinder_comparison_top50.rds", "bsseq_DAMEfinder_comparison_top1000.rds"
+## rds files needed: "bsseq_DAMEfinder_comparison_top50.rds", "bsseq_DAMEfinder_comparison_top1000.rds"
 ## extra file: "bsseq_DAMEfinder_comparison_all.rds" contains all the DAMEs and DMRs
 ## What we do: Plot the average methylation values per region for every region bsseq and DAMEfinder predict, and display them as normal vs adenoma.
 
