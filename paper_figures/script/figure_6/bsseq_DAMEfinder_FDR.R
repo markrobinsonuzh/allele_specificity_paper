@@ -1,9 +1,8 @@
 ## Figure 6 -- plot TPR vs FDR for bsse and DAMEfinder
 ## Data: Simulated noisy data set
 
-## rds files needed: "", "sim_ASM_score_matrix_noisy.rds", 
-## extra file: 
-## What we do: 
+## What we do: Look at performance of bsseq vs DAMEfinder on simulated data. We calculate the empirical p-value for each regions the two
+## methods predict using permutation tests.
 
 ## Libraries
 library(iCOBRA)
@@ -21,10 +20,6 @@ dame_gr <- GRanges(seqnames = Rle(c("chr14"), c(length(dame_start))),
 
 
 ## B # bsseq: do permutation tests and calculate empirical p-value of the DMRs predicted by bsseq
-
-
-
-# permute the data and predict regions (necessary step to calculate the p_values) #
 
 ## Load the cov files (result of bismark)
 cov_files <- dir(path = "../data/figure_6/noisy_cov_files",
@@ -104,6 +99,116 @@ for (i in 1:length(obs_areas)) {
 dmrs_gr <- makeGRangesFromDataFrame(obs_dmrs, keep.extra.columns = TRUE)
 o <- countOverlaps(dmrs_gr, dame_gr, type = "any")
 obs_dmrs$label <- o
+
+
+## C # DAMEfinder: do permutation tests and calculate empirical p-value of the DAMEs predicted by DAMEfinder
+
+## Load ASM score matrix
+sim_score_matrix <- readRDS("../data/sim_ASM_score_matrix_noisy.rds")
+
+## Remove CpG positions where all normals or all adenoma are NA
+w1 <- which(is.na(sim_score_matrix[,"adenoma1"])&is.na(sim_score_matrix[,"adenoma2"])&is.na(sim_score_matrix[,"adenoma3"]))
+w2 <- which(is.na(sim_score_matrix[,"normal1"])&is.na(sim_score_matrix[,"normal2"])&is.na(sim_score_matrix[,"normal3"]))
+sm <- sim_score_matrix[c(-w1,-w2),] 
+
+## Order by position
+rows <- rownames(sm)
+chr <- limma::strsplit2(rows, ".", fixed=T)[,1]
+pos1 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,2])
+pos2 <- as.numeric(limma::strsplit2(rows, ".", fixed=T)[,3])
+midpt <- floor((pos2 - pos1)/2)
+pos <- pos1 + midpt
+
+pos_df <- data.frame(chr=chr, pos=pos)
+o <- order(pos_df[,"chr"], pos_df[,"pos"])
+sm <- sm[o,]
+pos <- pos[o]
+chr <- chr[o]
+
+## Generate clusters
+pns <- clusterMaker(chr, pos, maxGap = 300)
+
+# Sqrt transfrom the data
+modulus_sqrt <- function(values) {
+  t_values <- abs(values)
+  ret <- sign(values)*sqrt(t_values)
+  return(ret)
+}
+
+sm_t <- matrix(data=NA, nrow=nrow(sm), ncol=ncol(sm))
+colnames(sm_t) <- colnames(sm)
+rownames(sm_t) <- rownames(sm)
+for (i in 1:ncol(sm_t)) {
+  sm_t[,i] <- modulus_sqrt(sm[,i])
+}
+
+coeff <- 2
+Q <- 0.9
+verbose <- TRUE
+
+## Permutation test to calculate empirical p-value
+perm_list <- list(c(1,1,0,1,0,0), c(1,1,0,0,1,0), c(1,1,0,0,0,1), 
+                  c(1,0,1,1,0,0), c(1,0,1,0,1,0), c(1,0,1,0,0,1), 
+                  c(0,1,1,1,0,0), c(0,1,1,0,1,0), c(0,1,1,0,0,1))
+
+## Function that predicts DAMEs given a permutation vector
+pred_regions <- function(p) {
+  # set design matrix
+  mod <- matrix(data=c(1,1,1,1,1,1,p), ncol = 2)
+  # get t-stats
+  fit <- limma::lmFit(sm_t, mod)
+  fit2 <- limma::eBayes(fit, proportion = 0.01, robust = TRUE)
+  wald <- fit2$t[, coeff]
+  # do smoothing
+  swald <- smoother(y = wald, x = pos, cluster = pns, smoothFunction = loessByCluster, 
+                    verbose = verbose)
+  smoothed_beta <- swald$fitted
+  # predict regions
+  dames <- regionFinder(x = smoothed_beta, chr = chr, pos = pos, cluster = pns, 
+                        cutoff = quantile(abs(smoothed_beta),Q, na.rm=T), verbose = verbose)
+  return(dames)
+}
+
+## Observed
+obs_regs <- pred_regions(c(1,1,1,0,0,0))
+
+## Permuted
+perm_regs <- mclapply(perm_list, pred_regions, mc.cores=9)
+
+## Areas and empirical p-values
+area_list <- list()
+for (i in 1:length(perm_regs)){
+  area_list[[i]] <- perm_regs[[i]]$area
+}
+area_list[[length(area_list)+1]] <- obs_regs$area
+labels <- c(rep("perm", length(area_list)-1), "real")
+names(area_list) <- labels
+
+perm_areas <- unlist(area_list[1:(length(area_list)-1)])
+obs_areas <- unlist(area_list[length(area_list)])
+total_perm_areas <- length(perm_areas)
+obs_regs$empirical_p_value <- rep(NA, nrow(obs_regs))
+for (i in 1:length(obs_areas)) {
+  w <- length(!is.na(which(obs_areas[i]>=perm_areas)))
+  p <- (total_perm_areas-w)/total_perm_areas
+  obs_regs[i,"empirical_p_value"] <- p
+} 
+
+## Set truth label
+obs_gr <- makeGRangesFromDataFrame(obs_regs, keep.extra.columns = TRUE)
+o <- countOverlaps(obs_gr, dame_gr, type = "any")
+obs_regs$label <- o
+
+
+
+
+
+
+
+
+
+
+
 
 
 
