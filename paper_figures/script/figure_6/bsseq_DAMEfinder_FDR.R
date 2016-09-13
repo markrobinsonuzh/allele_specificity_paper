@@ -200,15 +200,29 @@ o <- countOverlaps(obs_gr, dame_gr, type = "any")
 obs_regs$label <- o
 
 
+## D # iCOBRA
+
+bsseq_dmrs <- paste0(obs_dmrs$chr,".",obs_dmrs$start,".",obs_dmrs$end)
+DAMEfinder_dames <- paste0(obs_regs$chr,".",obs_regs$start,".",obs_regs$end)
+
+p_values <- data.frame(p_value_bsseq = c(obs_dmrs$empirical_p_value, rep(NA,length(DAMEfinder_dames))), 
+                       p_value_DAMEfinder = c(rep(NA, length(bsseq_dmrs)),obs_regs$empirical_p_value))
+colnames(p_values) <- c("bsseq", "DAMEfinder")
+rownames(p_values) <- c(bsseq_dmrs, DAMEfinder_dames)
 
 
+truth <- data.frame(truth=c(obs_dmrs$label,obs_regs$label))
+colnames(truth) <- "status"
+rownames(truth) <- c(bsseq_dmrs, DAMEfinder_dames)
 
+cobra_data <- COBRAData(pval = p_values, truth=truth)
+cobra_data <- calculate_adjp(cobra_data)
 
+cobraperf <- calculate_performance(cobra_data, binary_truth = "status", onlyshared=TRUE)
 
+cobraplot <- prepare_data_for_plot(cobraperf, colorscheme = "Dark2", facetted = TRUE)
 
-
-
-
-
-
+pdf("../figures/tpr_fdr_bsseq_DAMEfinder_noisy.pdf", w=10, h=8)
+plot_fdrtprcurve(cobraplot)
+dev.off()
 
