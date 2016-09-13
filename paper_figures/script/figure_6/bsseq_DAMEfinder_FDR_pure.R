@@ -1,5 +1,5 @@
 ## Figure 6 -- plot TPR vs FDR for bsse and DAMEfinder
-## Data: Simulated noisy data set
+## Data: Simulated pure data set
 
 ## What we do: Look at performance of bsseq vs DAMEfinder on simulated data. We calculate the empirical p-value for each regions the two
 ## methods predict using permutation tests.
@@ -22,7 +22,7 @@ dame_gr <- GRanges(seqnames = Rle(c("chr14"), c(length(dame_start))),
 ## B # bsseq: do permutation tests and calculate empirical p-value of the DMRs predicted by bsseq
 
 ## Load the cov files (result of bismark)
-cov_files <- dir(path = "../data/figure_6/noisy_cov_files",
+cov_files <- dir(path = "../data/figure_6/pure_cov_files",
                  pattern = "bismark.cov", full.names = TRUE, recursive = TRUE)
 sample_names <- limma::strsplit2(cov_files, "_CpG_")[,1]
 sample_names <- limma::strsplit2(sample_names, "-")[,1]
