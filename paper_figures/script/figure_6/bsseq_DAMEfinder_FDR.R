@@ -222,7 +222,7 @@ cobraperf <- calculate_performance(cobra_data, binary_truth = "status", onlyshar
 
 cobraplot <- prepare_data_for_plot(cobraperf, colorscheme = "Dark2", facetted = TRUE)
 
-pdf("../figures/tpr_fdr_bsseq_DAMEfinder_noisy.pdf", w=10, h=8)
+pdf("../figures/figure_6/tpr_fdr_bsseq_DAMEfinder_noisy.pdf", w=10, h=8)
 plot_fdrtprcurve(cobraplot)
 dev.off()
 
