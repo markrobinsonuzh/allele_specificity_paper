@@ -104,7 +104,7 @@ obs_dmrs$label <- o
 ## C # DAMEfinder: do permutation tests and calculate empirical p-value of the DAMEs predicted by DAMEfinder
 
 ## Load ASM score matrix
-sim_score_matrix <- readRDS("../data/sim_ASM_score_matrix_noisy.rds")
+sim_score_matrix <- readRDS("../data/sim_ASM_score_matrix_pure.rds")
 
 ## Remove CpG positions where all normals or all adenoma are NA
 w1 <- which(is.na(sim_score_matrix[,"adenoma1"])&is.na(sim_score_matrix[,"adenoma2"])&is.na(sim_score_matrix[,"adenoma3"]))
@@ -222,6 +222,6 @@ cobraperf <- calculate_performance(cobra_data, binary_truth = "status", onlyshar
 
 cobraplot <- prepare_data_for_plot(cobraperf, colorscheme = "Dark2", facetted = TRUE)
 
-pdf("../figures/figure_6/tpr_fdr_bsseq_DAMEfinder_noisy.pdf", w=10, h=8)
+pdf("../figures/figure_6/tpr_fdr_bsseq_DAMEfinder_pure.pdf", w=10, h=8)
 plot_fdrtprcurve(cobraplot)
 dev.off()
