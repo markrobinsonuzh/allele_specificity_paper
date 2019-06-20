@@ -13,5 +13,5 @@ Scripts in order of execution:
 4. `mergeBams.sh` merge all bam files from technical replicates. (single job, SLURM script)
 5. `runMethtuple.sh` subset the merged bam files by a specified chromosome, and run methtuple. (single job, SLURM script)
 
-`R/` 
+`R/`<br/>
 6. `fullFemaleMaleRun_methtuple.R` run DAMEfinder, plot diagnostics.

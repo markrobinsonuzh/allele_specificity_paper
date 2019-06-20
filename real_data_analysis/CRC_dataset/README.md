@@ -10,5 +10,5 @@ Scripts in order of execution:
 1. `runBismark.sh` align fastq files with bismark. (single job, SLURM script)
 2. `runMethtuple.sh` re-sort bam files, and run methtuple. (single job, SLURM script)
 
-`R/` 
+`R/`<br/>
 3. `fullCancerRun_with2plussamples.R` run DAMEfinder, plot diagnostics.
