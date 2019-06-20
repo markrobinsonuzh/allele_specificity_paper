@@ -1,3 +1,3 @@
-#ASM Score evaluation
+# ASM Score evaluation
 
-We use the SNP-ASM score to evaluate the tuple-ASM score. We extract both scores from a real CRC dataset.
+We use the SNP-ASM score to evaluate the tuple-ASM score and other similar scores. We extract both scores from a real CRC dataset.
