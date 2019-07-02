@@ -1,28 +1,26 @@
-#########################################################################################
-# R script to compare true snp-ASM to the tuple-ASM in a single sample. Make some roc curves
+###########################################################################################
+# R script to compare true snp-ASM to the tuple-ASM in a single sample. Make some roc 
+# curves
 #
 # BS-seq data set with 6 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 6 cancer lesions with normal tissue
 # 
 #
 # Stephany Orjuela, February 2018
-#########################################################################################
+###########################################################################################
 
 library(GenomicRanges)
 library(SummarizedExperiment)
 library(iCOBRA)
-library(pROC)
 library(ggplot2)
-library(cowplot)
-
 
 ####Get ASM score ####---------------------------------------------------------------------
 
 #load("tuple.trueASM.sampleTable.allChroms_fullcov.RData") #old
 #load("trueASM.sampleTable.allChroms_fullcov.RData") #old
-load("../data/derASM_fullCancer.RData") #single site derived-true asm
-load("../data/tupleASM_fullCancer.RData") #tuple derived-true asm
-load("../data/tuplederASM_fullCancer.RData") #<-- from generateTupleTables.R script
+load("data/derASM_fullCancer.RData") #single site derived-true asm
+load("data/tupleASM_fullCancer.RData") #tuple derived-true asm
+load("data/tuplederASM_fullCancer.RData") #<-- from generateTupleTables.R script
 
 keyGR <- rowRanges(derASM) #1,209,052 new: 1,225,491
 start(keyGR) <- end(keyGR) <- start(keyGR) - 1
@@ -35,7 +33,7 @@ ASM <- ASM[unique(sort(queryHits(over))),] #820,106
 asmscoreGR <- rowRanges(ASM)
 
 #read in amrfinder score
-allelicfile <- "amrfinder/NORM1.allelic"
+allelicfile <- "../amrfinder/NORM1.allelic"
 am <- data.table::fread(allelicfile, select = c(1,2,5))
 
 #Choose a sample to compare the score
@@ -103,14 +101,18 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
 }
 
 
+#number = sample index
+#above = vector of lower limit coverages
+#below =  vector of upper limit coverages
+
 x <- chooseSample(tuple.derASM, ASM, asmscoreGR, 7, 
                   c(2,5,10,50,100), c(4,9,49,99,3000), am)
 
-### Make curve ####-----------------------------------------------------------------------------
+### Make curve ####-------------------------------------------------------------------------
 
 #choose truth threshold (cases of asm)
-real1 <- ifelse(x$derTrue_asm >= 0.4, 1, 0) 
-real2 <- ifelse(x$derTrue_asm >= 0.6, 1, 0)
+real1 <- ifelse(x$derTrue_asm >= 0.2, 1, 0) 
+real2 <- ifelse(x$derTrue_asm >= 0.5, 1, 0)
 real3 <- ifelse(x$derTrue_asm >= 0.8, 1, 0)
 
 #change upper name
@@ -126,17 +128,39 @@ truth <- data.frame(real1 = real1,
                     ASM_snp = x$derTrue_asm)
                     #chromosome = seqnames(x))
 
-#run iCOBRa
+#run iCOBRa for different true-thresholds
 cobradat <- COBRAData(score = as.data.frame(mcols(x)[,3:5]),
                       truth = truth)
 
-#real2, by cov
+cobraperf <- calculate_performance(cobradat, binary_truth = "real1", 
+                                   cont_truth = "ASM_snp", splv = "coverage",
+                                   aspects = "roc", maxsplit = Inf)
+
+roc1 <- cobraperf@roc
+roc1$real <- "ASMsnp >= 0.2"
+
 cobraperf <- calculate_performance(cobradat, binary_truth = "real2", 
                                    cont_truth = "ASM_snp", splv = "coverage",
                                    aspects = "roc", maxsplit = Inf)
 
-cobraplot <- prepare_data_for_plot(cobraperf, colorscheme = "Set1", 
-                                   facetted = TRUE)
+roc2 <- cobraperf@roc
+roc2$real <- "ASMsnp >= 0.5"
 
-plot_roc(cobraplot, title = "ASMsnp = 0.6") + facet_wrap(~splitval, nrow = 1)
+cobraperf <- calculate_performance(cobradat, binary_truth = "real3", 
+                                   cont_truth = "ASM_snp", splv = "coverage",
+                                   aspects = "roc", maxsplit = Inf)
 
+roc3 <- cobraperf@roc
+roc3$real <- "ASMsnp >= 0.8"
+
+#put together all tables and plot
+roc <- rbind(roc1,roc2,roc3)
+
+myColor <- RColorBrewer::brewer.pal(9, "Set1")
+ggplot(roc, aes(FPR,TPR, color = method)) + 
+  geom_line() +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white")) +
+        #text = element_text(size = 15)) +
+  facet_wrap(~real+splitval, nrow = 3, ncol = 5)
+  scale_color_manual(values = myColor)

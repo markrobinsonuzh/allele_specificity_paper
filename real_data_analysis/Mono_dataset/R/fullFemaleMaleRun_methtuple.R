@@ -55,7 +55,7 @@ ASM_mat <- ASM_mat[rowSums(
   !is.na(assays(ASM_mat)[["cov"]]) &
     assays(ASM_mat)[["cov"]] >= 10) == BiocGenerics::ncol(ASM_mat),] #3:166,978
 
-ASM_mat <- rbind(ASM_mat,ASM_x) #185,343
+ASM_mat <- rbind(ASM_mat,ASM_x) #185,343, total 669,438
 
 
 #Prepare for plot
@@ -174,4 +174,11 @@ ggplot(e) +
         text = element_text(size = 15)) +
   ylab("ASMtuple") +
   facet_grid(~chr)
+
+#### make bigwigs ####
+
+sapply(colnames(ASM_mat), make_bigwig, 
+       scoreObj = ASM_mat, 
+       folder = "../../../Shared_s3it/sorjuela/EGAdata/EGAD00001002523/bigwigs", 
+       chromsizesFile = "../../../Shared_taupo/steph/reference/hg38.chrom.sizes.mod")
 

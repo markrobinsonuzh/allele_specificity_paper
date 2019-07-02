@@ -24,7 +24,7 @@ rds <- extract_bams(bam_files, vcf_files, sample_names, reference_file, cores=6)
 derASM <- calc_derivedasm(rds)
 
 #save(derASM, file = "../data/derASM_fullCancer.RData")
-#load("../data/derASM_fullCancer.RData")
+#load("data/derASM_fullCancer.RData")
 
 derASM <- GenomeInfoDb::sortSeqlevels(derASM) #only necessary for old calc_derivedasm()
 derASM <- sort(derASM)
@@ -102,7 +102,7 @@ ASM <- calc_asm(sample_list = tuple_list)
 
 #Filter
 filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10)
-ASM <- ASM[filt,] #2,015,001, 1,576,545
+ASM <- ASM[filt,] #2,015,001, 1,849,831
 
 #MDS
 methyl_MDS_plot(ASM, color = metadata$V2)
@@ -122,7 +122,13 @@ samp <- gsub("CRC|NORM","", metadata$V1)
 mod <- model.matrix(~grp+samp)
 mod <- mod[,-9]
 
-dames_noncimp <- find_dames(ASM, mod, coef = 2, maxGap = 200)
+dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200) #4037
+dames_noncimp <- find_dames(ASM, mod, coef = 3, maxGap = 200) #260
+
+dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200, pvalAssign = "empirical")
+
+#load("tupledames_cimp.RData")
+#load("tupledames_noncimp.RData")
 
 #### build bigwigs ####
 
