@@ -123,12 +123,19 @@ mod <- model.matrix(~grp+samp)
 mod <- mod[,-9]
 
 dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200) #4037
+GRcimp <- GRanges(dames_cimp$chr, IRanges(dames_cimp$start, dames_cimp$end))
+
 dames_noncimp <- find_dames(ASM, mod, coef = 3, maxGap = 200) #260
 
 dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200, pvalAssign = "empirical")
 
 #load("tupledames_cimp.RData")
 #load("tupledames_noncimp.RData")
+
+MEG3 <- GRanges(14, IRanges(101245747,101327368))
+GNAS <- GRanges(20, IRanges(57414773,57486247))
+over <- findOverlaps(GNAS,GRcimp)
+dames_cimp[subjectHits(over),]
 
 #### build bigwigs ####
 

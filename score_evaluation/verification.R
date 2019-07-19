@@ -22,11 +22,11 @@ load("data/derASM_fullCancer.RData") #single site derived-true asm
 load("data/tupleASM_fullCancer.RData") #tuple derived-true asm
 load("data/tuplederASM_fullCancer.RData") #<-- from generateTupleTables.R script
 
-keyGR <- rowRanges(derASM) #1,209,052 new: 1,225,491
+keyGR <- rowRanges(derASM) #1,225,491
 start(keyGR) <- end(keyGR) <- start(keyGR) - 1
 rm(derASM)
 
-asmscoreGR <- rowRanges(ASM) #3,753,430 new:3,589,472
+asmscoreGR <- rowRanges(ASM) #3,589,472
 over <- findOverlaps(asmscoreGR, keyGR)
 ASM <- ASM[unique(sort(queryHits(over))),] #820,106
 
@@ -106,25 +106,59 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
 #below =  vector of upper limit coverages
 
 x <- chooseSample(tuple.derASM, ASM, asmscoreGR, 7, 
-                  c(2,5,10,50,100), c(4,9,49,99,3000), am)
+                  c(5,10,50), c(9,49,3000), am)
+
+#### Plot scores with eachother ####
+
+xtab <- as.data.frame(x) #237,323
+xtab$coverage <- gsub("50-3000", ">= 50", xtab$coverage)
+xtab$coverage <- factor(xtab$coverage, 
+                       levels = c("5-9","10-49", ">= 50"))
+myColor <- RColorBrewer::brewer.pal(9, "Set1")
+
+#asmtuple
+p1 <- ggplot(xtab, aes(asm_tuple,derTrue_asm)) +
+  geom_point(color = myColor[1]) +
+  facet_wrap(~coverage) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines"))+
+  labs(title = "ASMtuple", x = "ASMtuple", y = "ASMsnp")
+
+#allelicmeth
+p2 <- ggplot(xtab, aes(allelicmeth,derTrue_asm)) +
+  geom_point(color = myColor[2]) +
+  facet_wrap(~coverage) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines")) +
+  labs(title = "allelicmeth", x = "allellicmeth", y = "ASMsnp")
+
+#beta
+p3 <-  ggplot(xtab, aes(beta,derTrue_asm)) +
+  geom_point(color = myColor[3]) +
+  facet_wrap(~coverage) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines")) +
+  labs(title = "Scaled beta", x = "scaled beta", y = "ASMsnp")
+
+p4 <- cowplot::plot_grid(p1,p2,p3, ncol=1, nrow = 3, align="v")
+ggplot2::ggsave("curvesNscatters/scoreScatters.png", p4, width = 12, height = 12)
 
 ### Make curve ####-------------------------------------------------------------------------
 
 #choose truth threshold (cases of asm)
-real1 <- ifelse(x$derTrue_asm >= 0.2, 1, 0) 
+#real1 <- ifelse(x$derTrue_asm >= 0.2, 1, 0) 
 real2 <- ifelse(x$derTrue_asm >= 0.5, 1, 0)
 real3 <- ifelse(x$derTrue_asm >= 0.8, 1, 0)
 
-#change upper name
-cov <- ifelse(x$coverage == "100-3000", ">100", x$coverage)
-cov <- factor(cov, levels = c("5-9","10-49","50-99",">100"))
-
 #generate truth + facet table
-truth <- data.frame(real1 = real1,
+truth <- data.frame(#real1 = real1,
                     real2 = real2,
                     real3 = real3,
-                    allreal = (real1+real2+real3),
-                    coverage = cov,
+                    allreal = (real2+real3),
+                    coverage = x$coverage,
                     ASM_snp = x$derTrue_asm)
                     #chromosome = seqnames(x))
 
@@ -132,12 +166,12 @@ truth <- data.frame(real1 = real1,
 cobradat <- COBRAData(score = as.data.frame(mcols(x)[,3:5]),
                       truth = truth)
 
-cobraperf <- calculate_performance(cobradat, binary_truth = "real1", 
-                                   cont_truth = "ASM_snp", splv = "coverage",
-                                   aspects = "roc", maxsplit = Inf)
-
-roc1 <- cobraperf@roc
-roc1$real <- "ASMsnp >= 0.2"
+# cobraperf <- calculate_performance(cobradat, binary_truth = "real1", 
+#                                    cont_truth = "ASM_snp", splv = "coverage",
+#                                    aspects = "roc", maxsplit = Inf)
+# 
+# roc1 <- cobraperf@roc
+# roc1$real <- "ASMsnp >= 0.2"
 
 cobraperf <- calculate_performance(cobradat, binary_truth = "real2", 
                                    cont_truth = "ASM_snp", splv = "coverage",
@@ -154,13 +188,25 @@ roc3 <- cobraperf@roc
 roc3$real <- "ASMsnp >= 0.8"
 
 #put together all tables and plot
-roc <- rbind(roc1,roc2,roc3)
+roc <- rbind(roc2,roc3)
+roc <- roc[roc$splitval != "overall",]
+roc$splitval <- gsub("coverage:5-9", "coverage = 5-9", roc$splitval)
+roc$splitval <- gsub("coverage:10-49", "coverage = 10-49", roc$splitval)
+roc$splitval <- gsub("coverage:50-3000", "coverage >= 50", roc$splitval)
 
-myColor <- RColorBrewer::brewer.pal(9, "Set1")
+roc$splitval <- factor(roc$splitval, 
+                       levels = c("coverage = 5-9","coverage = 10-49", "coverage >= 50"))
+
+roc$method <- gsub("asm_tuple", "ASMtuple",roc$method)
+roc$method <- factor(roc$method, levels = c("ASMtuple","allelicmeth","beta"))
+
 ggplot(roc, aes(FPR,TPR, color = method)) + 
-  geom_line() +
+  geom_line(size = 1) +
   theme_bw() + 
-  theme(strip.background = element_rect(colour = "black", fill = "white")) +
-        #text = element_text(size = 15)) +
-  facet_wrap(~real+splitval, nrow = 3, ncol = 5)
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines"), 
+        text = element_text(size = 12)) +
+  labs(color = "Score") +
+  facet_wrap(~real+splitval, nrow = 3, ncol = 3) +
   scale_color_manual(values = myColor)
+ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced.png")

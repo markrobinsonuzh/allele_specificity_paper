@@ -19,6 +19,14 @@ get_data_path <- function(file_name) file.path(DATA_PATH_DIR, file_name)
 
 #Since the files are too big, I only run the chromosomes I want to plot (see BASH folder)
 
+#chr19-20
+tuple_files <- sapply(c("C000S5/C000S5_1920subset_qs.CG.2.tsv.gz",
+                        "C001UY/C001UY_1920subset_qs.CG.2.tsv.gz",
+                        "S000RD/S000RD_1920subset_qs.CG.2.tsv.gz",
+                        "C0010K/C0010K_1920subset_qs.CG.2.tsv.gz",
+                        "C004SQ/C004SQ_1920subset_qs.CG.2.tsv.gz",
+                        "C005PS/C005PS_1920subset_qs.CG.2.tsv.gz"), get_data_path)
+
 #chr3
 tuple_files <- sapply(c("C000S5/C000S5_single_3subset_qs.CG.2.tsv.gz",
                       "C001UY/C001UY_single_3subset_qs.CG.2.tsv.gz",
@@ -39,23 +47,31 @@ tuple_files <- sapply(c("C000S5/C000S5_Xsubset_qs.CG.2.tsv.gz",
 sample_names <- c("C000S5", "C001UY", "S000RD", "C0010K", "C004SQ", "C005PS")
 
 #Run DAMEfinder for each chromosome
-tuple_list <- read_tuples(files = tuple_files, sample_names, min_coverage = 5)
-ASM_mat <- calc_asm(sample_list = tuple_list)
-#save(ASM_mat, "malevsfem_chrom3_ASM_mat.RData")
+tuple_list <- read_tuples(files = tuple_files, sample_names, minCoverage = 5)
+ASM_mat <- calc_asm(sampleList = tuple_list)
+#save(ASM_mat, file="malevsfem_chrom3_ASM_mat.RData")
 
 
 #Filter
-#load("malevsfem_chromX_ASM_mat_singleTest.RData") #317,179
+
+load("malevsfem_chrom1920_ASM_mat.RData") #574,493
+ASM_1920 <- ASM_mat[rowSums(
+  !is.na(assays(ASM_mat)[["cov"]]) &
+    assays(ASM_mat)[["cov"]] >= 10) == BiocGenerics::ncol(ASM_mat),] #19+20:264,612
+
+load("malevsfem_chromX_ASM_mat_singleTest.RData") #317,179
 ASM_x <- ASM_mat[rowSums(
   !is.na(assays(ASM_mat)[["cov"]]) &
     assays(ASM_mat)[["cov"]] >= 10) == BiocGenerics::ncol(ASM_mat),] #X:18,365
 
-#load("malevsfem_chrom3_ASM_mat.RData") #352,259
-ASM_mat <- ASM_mat[rowSums(
+load("malevsfem_chrom3_ASM_mat.RData") #352,259
+ASM_3 <- ASM_mat[rowSums(
   !is.na(assays(ASM_mat)[["cov"]]) &
     assays(ASM_mat)[["cov"]] >= 10) == BiocGenerics::ncol(ASM_mat),] #3:166,978
 
-ASM_mat <- rbind(ASM_mat,ASM_x) #185,343, total 669,438
+rm(ASM_mat)
+
+ASM_mat <- rbind(ASM_3,ASM_1920,ASM_x) #449,955
 
 
 #Prepare for plot
@@ -179,6 +195,6 @@ ggplot(e) +
 
 sapply(colnames(ASM_mat), make_bigwig, 
        scoreObj = ASM_mat, 
-       folder = "../../../Shared_s3it/sorjuela/EGAdata/EGAD00001002523/bigwigs", 
+       folder = file.path(DATA_PATH_DIR, "bigwigs"), 
        chromsizesFile = "../../../Shared_taupo/steph/reference/hg38.chrom.sizes.mod")
 
