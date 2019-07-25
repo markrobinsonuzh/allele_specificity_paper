@@ -32,7 +32,7 @@ locsGR <- GRanges(imprlocs$chromosome_name, IRanges(imprlocs$start_position,
                   hgnc_symbol = imprlocs$hgnc_symbol) 
 
 #get promoters from these genes
-slopGR <- promoters(locsGR, upstream=2000, downstream=10)
+slopGR <- promoters(locsGR, upstream=1000, downstream=10)
 
 #or promoters from annotar (all tx)
 #ind <- which(proms$symbol %in% impr$Gene)
@@ -77,11 +77,15 @@ myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 greys <- RColorBrewer::brewer.pal(9, "Greys")[7]
 
 impr <- ggplot(e) +
-  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
+              trim = FALSE, adjust = 2) +
+  scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
-        text = element_text(size = 15)) +
+        text = element_text(size = 15),
+        legend.position = "none") +
   ylab("ASMtuple") +
   facet_grid(~state)
 

@@ -30,6 +30,7 @@ sample_names <- c("C000S5", "C001UY", "S000RD", "C0010K", "C004SQ", "C005PS")
 tuple_list <- read_tuples(files = tuple_files, sample_names, minCoverage = 5)
 ASM_mat <- calc_asm(sampleList = tuple_list) #6,802,057
 #save(ASM_mat, file="malevsfem_ASM_mat.RData")
+#load("malevsfem_ASM_mat.RData")
 
 #Filter
 ASM_mat <- ASM_mat[rowSums(
@@ -65,14 +66,19 @@ e <- get_e(ASM_mat)
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 greys <- RColorBrewer::brewer.pal(9, "Greys")[7]
 pfull <- ggplot(e) +
-  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
+              trim = FALSE, adjust = 1.5) +
+  scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
-        text = element_text(size = 15)) +
-  ylab("ASMtuple") +
+        text = element_text(size = 15),
+        legend.position = "none") +
+  labs(y="ASMtuple",x="") +
   facet_grid(~chr)
 
+#ggsave("curvesNscatters/test1.png",pfull)
 
 #MDS
 methyl_MDS_plot(ASM_mat, color = c(rep("Male",3), rep("Female",3)))
@@ -86,24 +92,6 @@ methyl_MDS_plot(ASM_mat, color = c(rep("Male",3), rep("Female",3)))
 # assays(ASM_meth)[["asm"]] <- beta
 # asm <- as.data.frame(assays(ASM_score_matrix)[["asm"]])
 # asm <- as.data.frame(assays(ASM_score_matrix)[["cov"]])
-
-#asm <- abs(asm)
-#w <- !is.na(rowSums(beta))
-#beta <- beta[w,]
-
-# myColor <- rev(RColorBrewer::brewer.pal(11, "Spectral"))
-# #olorRampPalette(bre[4:9])(15)
-# 
-# #myColor_scale_fill <- scale_fill_gradientn(colours = myColor)
-# 
-# ggplot(de, aes(x=value, y=valueasm)) +
-#   #stat_binhex(bins = 50) +
-#   #myColor_scale_fill +
-#   geom_point(alpha = 1/10) +
-#   theme_light() +
-#   #geom_density2d(colour = "black") +
-#   facet_wrap(~sample)
-
 
 #### Test for differences ####
 males <- rowMeans(assay(ASM_x,"asm")[,1:3])
@@ -143,18 +131,25 @@ ASM_mat.inproms <- ASM_mat[uniQ,]
 e <- get_e(ASM_mat.inproms)
 
 pprom <- ggplot(e) +
-  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
+              trim = FALSE, adjust = 1.5) +
+  scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
         text = element_text(size = 15)) +
-  ylab("ASMtuple") +
+  labs(y="ASMtuple",x = "") +
   facet_grid(~chr)
 
 
 #generate impr from other script, and use it here
-p4 <- cowplot::plot_grid(pfull, pprom, impr, ncol=1, nrow = 3, labels = c("A","B","C"))
-ggplot2::ggsave("curvesNscatters/chromboxplots_cow2.png", p4, width = 10, height = 10)
+p4 <- cowplot::plot_grid(pfull, pprom, impr, ncol=1, nrow = 3, 
+                         labels = c("A","B","C"),
+                         align = "v",
+                         axis = "lr")
+ggplot2::ggsave("curvesNscatters/chromboxplots_cow2.png", p4, 
+                width = 10, height = 13)
 
 #### make bigwigs ####
 
