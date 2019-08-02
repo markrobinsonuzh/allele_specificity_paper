@@ -11,8 +11,8 @@
 library(GenomicRanges)
 library(SummarizedExperiment)
 
-load("../data/derASM_fullCancer.RData")
-load("../data/tupleASM_fullCancer.RData")
+load("data/derASM_fullCancer.RData")
+load("data/tupleASM_fullCancer.RData")
 
 #### Get CpG and snp keys from derived-asm table ####--------------------------------------------------------
 #load("trueASM.sampleTable.allChroms_fullcov.RData") old
@@ -56,8 +56,7 @@ posed.snp.tuple.table <- matrix(x, nrow = length(tuplesl), ncol = 12, byrow = T)
 colnames(posed.snp.tuple.table) <- colnames(derASM)
 #posed.snp.tuple.table <- t(snp.tuple.table)
 
-# #### Get the derived ASM for the same tuples ####-------------------------------------------
-# #To input to get the derived-true asm
+#### Get tuple coverage data ####-----------------------------------------------------------------
 
 #IF you don't take this out, the loop takes AGES
 ref.cov <- assay(derASM,"ref.cov")
@@ -65,35 +64,7 @@ alt.cov <- assay(derASM,"alt.cov")
 ref.meth <- assay(derASM,"ref.meth")
 alt.meth <- assay(derASM,"alt.meth")
 
-true.tuple.asm <- mclapply(tuplesl, function(g){
-  w <- as.integer(which(wtable$subjectHits == g))
 
-  #Merge tuple coverage for read and alt reads
-  if(length(w) == 1){
-    sum.cov.ref <- ref.cov[wtable$queryHits[w],]
-    sum.cov.alt <- alt.cov[wtable$queryHits[w],]
-    sum.meth.ref <- ref.meth[wtable$queryHits[w],]
-    sum.meth.alt <- alt.meth[wtable$queryHits[w],]
-  }
-  if(length(w) > 1){
-    sum.cov.ref <- colSums(ref.cov[wtable$queryHits[w],])
-    sum.cov.alt <- colSums(alt.cov[wtable$queryHits[w],])
-    sum.meth.ref <- colSums(ref.meth[wtable$queryHits[w],])
-    sum.meth.alt <- colSums(alt.meth[wtable$queryHits[w],])
-  }
-  pref <- sum.meth.ref / sum.cov.ref
-  palt <- sum.meth.alt / sum.cov.alt
-  p.diff <- abs(palt - pref)
-
-  return(p.diff)
-
-})
-
-x <- unlist(true.tuple.asm)
-posed.true.tuple.asm <- matrix(x, nrow = length(tuplesl), ncol = 12, byrow = T)
-colnames(posed.true.tuple.asm) <- colnames(derASM)
-
-#### Get tuple coverage data ####-----------------------------------------------------------------
 tuple.ref.cov <- t(vapply(tuplesl, function(g){
   w <- as.integer(which(wtable$subjectHits == g))
   
@@ -146,9 +117,22 @@ tuple.alt.meth <- t(vapply(tuplesl, function(g){
   
 }, double(12)))
 
-#### Build summ Experiment ####------------------------------------------------------------------------
+
+#### Get the derived ASM for the same tuples ####-------------------------------------------
+# #To input to get the derived-true asm
+
+posed.true.tuple.asm <- abs((tuple.alt.meth / tuple.alt.cov) - (tuple.ref.meth / tuple.ref.cov))
+
+#new version of trueASM
+prop <- (tuple.ref.meth + tuple.alt.meth) / (tuple.ref.cov + tuple.alt.cov)
+
+stat.tuple.asm  <- ((tuple.ref.meth/tuple.ref.cov) - (tuple.alt.meth/tuple.alt.cov)) /
+  sqrt(prop * (1 - prop) * ((1/tuple.ref.cov) + (1/tuple.alt.cov)))
+
+#### Build summ Experiment ####----------------------------------------------------------------
 
 tuple.derASM <- SummarizedExperiment(assays=S4Vectors::SimpleList(der.ASM = posed.true.tuple.asm,
+                                                                  stat.ASM = stat.tuple.asm,
                                                                   snp.table = posed.snp.tuple.table,
                                                                   ref.cov = tuple.ref.cov,
                                                                   alt.cov = tuple.alt.cov,
@@ -156,4 +140,4 @@ tuple.derASM <- SummarizedExperiment(assays=S4Vectors::SimpleList(der.ASM = pose
                                                                   alt.meth = tuple.alt.meth),
                                      rowRanges=asmscoreGR_end)
 
-save(tuple.derASM, file = "../data/tuplederASM_fullCancer.RData")
+save(tuple.derASM, file = "data/tuplederASM_fullCancer.RData")
