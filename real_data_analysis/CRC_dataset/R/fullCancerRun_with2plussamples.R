@@ -1,5 +1,5 @@
 #########################################################################################
-# Re-run full pipeline with non-cimp and cimp samples
+# Re-run full pipeline with non-cimp and cimp samples, including ASMsnp and ASMtuple
 #
 # TBS-seq data CRCs Vs Norm
 # NOTE: Files included here too big to include in repo
@@ -10,7 +10,7 @@
 library(SummarizedExperiment)
 library(DAMEfinder)
 
-metadata <- read.table("../data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
 
 #### SNP mode ####
 
@@ -20,11 +20,11 @@ sample_names <- metadata$V1
 reference_file <- "/home/Shared_taupo/data/annotation/Human/GRCH37/Bisulfite_Genome.release91/GRCh37.91.fa"
 
 #Split reads and extract methylation according to allele
-rds <- extract_bams(bam_files, vcf_files, sample_names, reference_file, cores=6)
+rds <- extract_bams(bam_files, vcf_files, sample_names, reference_file, cores=6, coverage = 2)
 derASM <- calc_derivedasm(rds)
 
 #save(derASM, file = "../data/derASM_fullCancer.RData")
-#load("data/derASM_fullCancer.RData")
+load("data/derASM_fullCancer.RData")
 
 derASM <- GenomeInfoDb::sortSeqlevels(derASM) #only necessary for old calc_derivedasm()
 derASM <- sort(derASM)
@@ -34,11 +34,8 @@ filt <- rowSums(!is.na(assay(derASM, "der.ASM"))) >= 10
 derASM <- derASM[filt,]
 
 #Plot checks
-methyl_MDS_plot(derASM, color = metadata$V2)
-methyl_MDS_plot(derASM, color = metadata$V2, top  = 500)
-methyl_MDS_plot(derASM[,grp %in% c("NORM_cimp","NORM_non")], 
-                color = grp[grp %in% c("NORM_cimp","NORM_non")], top = 10000)
-
+myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,3,5,8)]
+m1 <- methyl_MDS_plot(derASM, group = metadata$V2, color = myColor)
 
 x <- assay(derASM,"der.ASM")
 #xsub <- x[,grp %in% c("CRC_cimp","NORM_cimp")]
@@ -61,34 +58,32 @@ samp <- gsub("CRC|NORM","", metadata$V1)
 mod <- model.matrix(~grp+samp)
 mod <- mod[,-9] #because Coefficients not estimable: samp6_cimp
 
-
 #Get DAMEs
 dames_noncimp <- find_dames(derASM, mod, coef = 2, maxGap = 100)
-#nice region
-#9  99984229  99984408
 dames_noncimp <- find_dames(derASM, mod, coef = 2, pvalAssign = "empirical", maxGap = 100) 
 
-#Play with some regiones
-which(start(derASM) == 99983700)
-assay(derASM, "snp.table")[24208:24240,c(2,4,6,8,10,12)]
+#Plot methyl_circles 
 snp2 <- GRanges(9, IRanges(99983847, width = 1)) #este 
 dame <- GRanges(9,IRanges(99983700,99983917)) #con este
 
+path <- "/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/"
 
-#Plot methyl_circles 
-#TODO: Change paths
-methyl_circle_plot(snp2, vcfFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",metadata$V4[6]),
-                   bamFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",metadata$V3[6]), 
-                   refFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",reference_file),
-                   sampleName = "CRC6",
+m1 <- methyl_circle_plot(snp2, vcfFile = gsub("/home/",path, metadata$V4[2]),
+                   bamFile = gsub("/home/",path,metadata$V3[2]), 
+                   refFile = gsub("/home/",path,reference_file),
+                   sampleName = "CRC2",
                    dame = dame,
                    pointSize = 2)
                    
-methyl_circle_plot(snp2, vcfFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",metadata$V4[12]),
-                   bamFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",metadata$V3[12]), 
-                   refFile = gsub("/home/","/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/",reference_file),
-                   sampleName = "NORM6",
+m2 <- methyl_circle_plot(snp2, vcfFile = gsub("/home/",path,metadata$V4[8]),
+                   bamFile = gsub("/home/",path,metadata$V3[8]), 
+                   refFile = gsub("/home/",path,reference_file),
+                   sampleName = "NORM2",
+                   dame = dame,
                    pointSize = 2)
+
+m4 <- cowplot::plot_grid(m2,m1, ncol=1, nrow = 2, labels = c("A","B"))
+ggplot2::ggsave("MCircle_plots/MethylcirclesSNP.png", m4, width = 12, height = 10)
 
 
 
@@ -98,14 +93,21 @@ tuple_files <- metadata$V5
 tuple_list <- read_tuples(files = tuple_files, sample_names, min_coverage = 5)
 ASM <- calc_asm(sample_list = tuple_list)
 #save(ASM, file = "tupleASM_fullCancer.RData")
-#load("../tupleASM_fullCancer.RData")
+load("data/tupleASM_fullCancer.RData")
 
 #Filter
 filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10)
 ASM <- ASM[filt,] #2,015,001, 1,849,831
 
 #MDS
-methyl_MDS_plot(ASM, color = metadata$V2)
+m2 <- methyl_MDS_plot(ASM, group = metadata$V2, color = myColor, adj = 0.03)
+
+#full paper figure TODO: fix for new MDS function
+m1 <- m1 + theme(text = element_text(size = 15))
+m2 <- m2 +  theme(legend.position = "none", text = element_text(size = 15))
+m4 <- cowplot::plot_grid(m2,m1, ncol=2, nrow = 2, labels = c("A","B","C"),
+                         rel_widths = c(1,1.3), rel_heights = 1)
+ggplot2::ggsave("curvesNscatters/MDSboth.png", m4, width = 12, height = 10)
 
 #MD and MV plots
 x <- assay(ASM,"asm")
@@ -119,23 +121,80 @@ ggplot(dd, aes(means, diffs)) + geom_point(alpha=0.2) + theme_bw()
 grp <- factor(metadata$V2)
 grp <- relevel(grp, "NORM_cimp")
 samp <- gsub("CRC|NORM","", metadata$V1)
-mod <- model.matrix(~grp+samp)
+mod <- model.matrix(~0+grp+samp)
 mod <- mod[,-9]
 
-dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200) #4037
-GRcimp <- GRanges(dames_cimp$chr, IRanges(dames_cimp$start, dames_cimp$end))
+#set contrast
+cont <- limma::makeContrasts(grpCRC_cimp-grpNORM_cimp, grpCRC_non-grpNORM_non, 
+                             levels = mod)
 
-dames_noncimp <- find_dames(ASM, mod, coef = 3, maxGap = 200) #260
+#get DAMEs
+dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) #4037
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) #260
+dames_noncimp <- dames_noncimp[dames_noncimp$FDR <= 0.05 & dames_noncimp$clusterL > 1,] #231
 
-dames_cimp <- find_dames(ASM, mod, coef = 2, maxGap = 200, pvalAssign = "empirical")
+dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical") #0
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical")#0
 
-#load("tupledames_cimp.RData")
-#load("tupledames_noncimp.RData")
-
-MEG3 <- GRanges(14, IRanges(101245747,101327368))
+MEG3 <- GRanges(14, IRanges(101245747,101327368)) 
 GNAS <- GRanges(20, IRanges(57414773,57486247))
-over <- findOverlaps(GNAS,GRcimp)
-dames_cimp[subjectHits(over),]
+H19 <- GRanges(11,IRanges(2016406,2022700))
+IGF2 <- GRanges(11,IRanges(2150342,2162468))
+
+#OVerlap with DMRs
+load("tupledames_cimp.RData")
+load("tupledames_cimpfix2.RData")
+cimpfix <- dames_cimp
+load("tupledames_noncimpfix.RData")
+noncimpfix <- dames_noncimp
+#load("tupledames_cimp_emp.RData")
+load("tupledames_noncimp_emp.RData")
+
+GRnoncimp2 <- GRanges(dames_noncimp$chr, 
+                      IRanges(dames_noncimp$start, dames_noncimp$end),
+                      A = dames_noncimp$meanTstat,
+                      pval = dames_noncimp$pvalSimes,
+                      FDR = dames_noncimp$FDR) #SIMES
+
+GRcimp <- GRanges(dames_cimp$chr, 
+                  IRanges(dames_cimp$start, dames_cimp$end),
+                  A = dames_cimp$meanTstat,
+                  FDR = dames_cimp$FDR)
+
+GRnoncimp <- GRanges(dames_noncimp$chr, 
+                     IRanges(dames_noncimp$start, dames_noncimp$end),
+                     A = dames_noncimp$meanTstat,
+                     pval = dames_noncimp$pvalEmp,
+                     FDR = dames_noncimp$FDR)
+
+#get DMRs
+load("../../../Shared_penticton/data/seq/mirco_mets_mbdseq/Data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
+DMRsfilt <- DMRs[DMRs$qval <= 0.05] #13,220
+seqlevels(GRnoncimp) <- paste0("chr",seqlevels(GRnoncimp))
+over <- findOverlaps(GRnoncimp, DMRsfilt)
+
+length(GRnoncimp[unique(queryHits(over))])
+head(GRnoncimp[-unique(queryHits(over))])
+
+
+#Some methylcircles
+trimmedMEG3 <- GRanges(12,IRanges(98850698,98851011))   
+m1 <- methyl_circle_plotCpG(trimmedMEG3,
+                      bamFile = gsub("/home/",path,metadata$V3[2]), 
+                      refFile = gsub("/home/",path,reference_file),
+                      dame = trimmedMEG3,
+                      pointSize = 1,
+                      order = TRUE)
+m2 <- methyl_circle_plotCpG(trimmedMEG3,
+                            bamFile = gsub("/home/",path,metadata$V3[8]), 
+                            refFile = gsub("/home/",path,reference_file),
+                            dame = trimmedMEG3,
+                            pointSize = 1,
+                            order = TRUE)
+
+m4 <- cowplot::plot_grid(m2,m1, ncol=1, nrow = 2, labels = c("A","B"))
+ggplot2::ggsave("MCircle_plots/methylCirclesTopTupleDAMECIMP.png", m4, width = 10, 
+                height = 12)
 
 #### build bigwigs ####
 
