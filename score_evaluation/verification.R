@@ -15,12 +15,9 @@ library(iCOBRA)
 library(ggplot2)
 
 ####Get ASM score ####---------------------------------------------------------------------
-
-#load("tuple.trueASM.sampleTable.allChroms_fullcov.RData") #old
-#load("trueASM.sampleTable.allChroms_fullcov.RData") #old
 load("data/derASM_fullCancer.RData") #single site derived-true asm
 load("data/tupleASM_fullCancer.RData") #tuple derived-true asm
-load("data/tuplederASM_fullCancer.RData") #<-- from generateTupleTables.R script
+load("data/tuplederASM_fullCancer2.RData") #<-- from generateTupleTables.R script
 
 keyGR <- rowRanges(derASM) #1,225,491
 start(keyGR) <- end(keyGR) <- start(keyGR) - 1
@@ -45,6 +42,9 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
   scoreGR$derTrue_asm <- 0
   scoreGR$derTrue_asm <- abs(assays(tuple.derived_ASM_matrix)[["der.ASM"]][,number])
   
+  scoreGR$stat_asm <- 0
+  scoreGR$stat_asm <- abs(assays(tuple.derived_ASM_matrix)[["stat.ASM"]][,number])
+  
   #add asmscore
   scoreGR$asm_tuple <- 0
   scoreGR$asm_tuple <- assays(ASM_score_matrix)[["asm"]][,number]
@@ -56,8 +56,8 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
                     assays(ASM_score_matrix)[["UM"]][,number]) / assays(ASM_score_matrix)[["cov"]][,number]
   
   scoreGR$beta <- ifelse(meth_level1 <= 0.5 , 
-                          meth_level1/0.5, 
-                          (1-meth_level1)/0.5)
+                         meth_level1/0.5, 
+                         (1-meth_level1)/0.5)
   
   scoreGR$beta <- ifelse(is.na(scoreGR$beta), 0, scoreGR$beta)
   
@@ -65,10 +65,12 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
   #add allelicmeth score from amrfinder
   #the score is a pvalue, allthough in the methpipe that is not explicitely mentioned
   amGR <- GRanges(amrfile$V1, IRanges(start=amrfile$V2, width = 1), almeth = amrfile$V5)
+  start(amGR) <- start(amGR) + 1
+  end(amGR) <- end(amGR) + 2
   o <- findOverlaps(amGR, scoreGR)
   scoreGR$allelicmeth <- 0
   #transform pvalue for comparison
-  #scoreGR$almeth[subjectHits(o)] <- qnorm(1-(amGR$almeth[queryHits(o)]/2))
+  #scoreGR$allelicmeth[subjectHits(o)] <- qnorm(1-(amGR$almeth[queryHits(o)]/2))
   scoreGR$allelicmeth[subjectHits(o)] <- -log10(amGR$almeth[queryHits(o)]) 
   
   #For cov
@@ -93,7 +95,7 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
   #For the eval, remove what doesnt have a snp in this sample
   
   scoreGR <- scoreGR[!is.na(assay(tuple.derived_ASM_matrix,"der.ASM")[,number]) &
-                     !is.na(assays(tuple.derived_ASM_matrix)[["snp.table"]][,number])]
+                       !is.na(assays(tuple.derived_ASM_matrix)[["snp.table"]][,number])]
   
   print(length(scoreGR))
   
@@ -113,7 +115,7 @@ x <- chooseSample(tuple.derASM, ASM, asmscoreGR, 7,
 xtab <- as.data.frame(x) #237,323
 xtab$coverage <- gsub("50-3000", ">= 50", xtab$coverage)
 xtab$coverage <- factor(xtab$coverage, 
-                       levels = c("5-9","10-49", ">= 50"))
+                        levels = c("5-9","10-49", ">= 50"))
 myColor <- RColorBrewer::brewer.pal(9, "Set1")
 
 #asmtuple
@@ -149,29 +151,25 @@ ggplot2::ggsave("curvesNscatters/scoreScatters.png", p4, width = 12, height = 12
 ### Make curve ####-------------------------------------------------------------------------
 
 #choose truth threshold (cases of asm)
-#real1 <- ifelse(x$derTrue_asm >= 0.2, 1, 0) 
 real2 <- ifelse(x$derTrue_asm >= 0.5, 1, 0)
 real3 <- ifelse(x$derTrue_asm >= 0.8, 1, 0)
 
+#use new statASM
+real2 <- ifelse(x$stat_asm >= 7, 1, 0)
+real3 <- ifelse(x$stat_asm >= 10, 1, 0)
+
+
 #generate truth + facet table
-truth <- data.frame(#real1 = real1,
-                    real2 = real2,
-                    real3 = real3,
-                    allreal = (real2+real3),
-                    coverage = x$coverage,
-                    ASM_snp = x$derTrue_asm)
-                    #chromosome = seqnames(x))
+truth <- data.frame(
+  real2 = real2,
+  real3 = real3,
+  allreal = (real2+real3),
+  coverage = x$coverage,
+  ASM_snp = x$derTrue_asm)
 
 #run iCOBRa for different true-thresholds
-cobradat <- COBRAData(score = as.data.frame(mcols(x)[,3:5]),
+cobradat <- COBRAData(score = as.data.frame(mcols(x)[,4:6]),
                       truth = truth)
-
-# cobraperf <- calculate_performance(cobradat, binary_truth = "real1", 
-#                                    cont_truth = "ASM_snp", splv = "coverage",
-#                                    aspects = "roc", maxsplit = Inf)
-# 
-# roc1 <- cobraperf@roc
-# roc1$real <- "ASMsnp >= 0.2"
 
 cobraperf <- calculate_performance(cobradat, binary_truth = "real2", 
                                    cont_truth = "ASM_snp", splv = "coverage",
