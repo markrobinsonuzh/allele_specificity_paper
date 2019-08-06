@@ -29,13 +29,19 @@ ASM <- ASM[unique(sort(queryHits(over))),] #820,106
 
 asmscoreGR <- rowRanges(ASM)
 
-#read in amrfinder score
+#read in allelicmeth score
 allelicfile <- "../amrfinder/NORM1.allelic"
 am <- data.table::fread(allelicfile, select = c(1,2,5))
 
+#read in amrfinder score
+amrfile <- "../amrfinder/NORM1.amr"
+amr <- data.table::fread(amrfile, select = c(1:3,5))
+
+
+
 #Choose a sample to compare the score
 chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
-                         number, above, below, amrfile){
+                         number, above, below, allelicfile, amrfile){
   
   
   #Put derASM on asmscore GRanges
@@ -64,14 +70,23 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
   
   #add allelicmeth score from amrfinder
   #the score is a pvalue, allthough in the methpipe that is not explicitely mentioned
-  amGR <- GRanges(amrfile$V1, IRanges(start=amrfile$V2, width = 1), almeth = amrfile$V5)
+  amGR <- GRanges(allelicfile$V1, IRanges(start=allelicfile$V2, width = 1), almeth = allelicfile$V5)
   start(amGR) <- start(amGR) + 1
   end(amGR) <- end(amGR) + 2
   o <- findOverlaps(amGR, scoreGR)
   scoreGR$allelicmeth <- 0
-  #transform pvalue for comparison
-  #scoreGR$allelicmeth[subjectHits(o)] <- qnorm(1-(amGR$almeth[queryHits(o)]/2))
   scoreGR$allelicmeth[subjectHits(o)] <- -log10(amGR$almeth[queryHits(o)]) 
+  scoreGR$allelicmeth <- ifelse(is.infinite(scoreGR$allelicmeth), 313.8136, scoreGR$allelicmeth)
+  
+  #add amrfinder score
+  amrGR <- GRanges(amrfile$V1, IRanges(start=amrfile$V2, end=amrfile$V3), almeth = amrfile$V5)
+  start(amrGR) <- start(amrGR) + 1
+  end(amrGR) <- end(amrGR) + 2
+  o <- findOverlaps(amrGR, scoreGR)
+  scoreGR$amr <- 0
+  scoreGR$amr[subjectHits(o)] <- -log10(amrGR$almeth[queryHits(o)]) 
+  scoreGR$amr <- ifelse(is.infinite(scoreGR$amr), 313.8136, scoreGR$amr)
+  
   
   #For cov
   scoreGR$coverage <- 0
@@ -108,7 +123,7 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
 #below =  vector of upper limit coverages
 
 x <- chooseSample(tuple.derASM, ASM, asmscoreGR, 7, 
-                  c(5,10,50), c(9,49,3000), am)
+                  c(5,10,50), c(9,49,3000), am, amr)
 
 #### Plot scores with eachother ####
 
@@ -158,6 +173,10 @@ real3 <- ifelse(x$derTrue_asm >= 0.8, 1, 0)
 real2 <- ifelse(x$stat_asm >= 7, 1, 0)
 real3 <- ifelse(x$stat_asm >= 10, 1, 0)
 
+#get AUCs
+methodsl <- list(x$asm_tuple,x$beta, x$allelicmeth, x$amr)
+auc1 <- unlist(lapply(methodsl, pROC::auc, response = real2))
+auc2 <- unlist(lapply(methodsl, pROC::auc, response = real3))
 
 #generate truth + facet table
 truth <- data.frame(
@@ -168,7 +187,7 @@ truth <- data.frame(
   ASM_snp = x$derTrue_asm)
 
 #run iCOBRa for different true-thresholds
-cobradat <- COBRAData(score = as.data.frame(mcols(x)[,4:6]),
+cobradat <- COBRAData(score = as.data.frame(mcols(x)[,4:7]),
                       truth = truth)
 
 cobraperf <- calculate_performance(cobradat, binary_truth = "real2", 
@@ -196,7 +215,7 @@ roc$splitval <- factor(roc$splitval,
                        levels = c("coverage = 5-9","coverage = 10-49", "coverage >= 50"))
 
 roc$method <- gsub("asm_tuple", "ASMtuple",roc$method)
-roc$method <- factor(roc$method, levels = c("ASMtuple","allelicmeth","beta"))
+roc$method <- factor(roc$method, levels = c("ASMtuple","beta","allelicmeth","amr"))
 
 ggplot(roc, aes(FPR,TPR, color = method)) + 
   geom_line(size = 1) +
@@ -207,4 +226,4 @@ ggplot(roc, aes(FPR,TPR, color = method)) +
   labs(color = "Score") +
   facet_wrap(~real+splitval, nrow = 3, ncol = 3) +
   scale_color_manual(values = myColor)
-ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced.png")
+ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced_withamr.png")
