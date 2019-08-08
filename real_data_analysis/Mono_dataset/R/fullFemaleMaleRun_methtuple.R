@@ -61,16 +61,16 @@ get_e <- function(mat){
 
 e <- get_e(ASM_mat)
 
-
 #Boxplots
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
-greys <- RColorBrewer::brewer.pal(9, "Greys")[7]
 pfull <- ggplot(e) +
-  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
-  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
-              trim = FALSE, adjust = 1.5) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
+              trim = FALSE, adjust = 1.5, scale = "width") +
+  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+  #              alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
+  scale_color_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
         text = element_text(size = 15),
@@ -131,10 +131,12 @@ ASM_mat.inproms <- ASM_mat[uniQ,]
 e <- get_e(ASM_mat.inproms)
 
 pprom <- ggplot(e) +
-  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
-  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
-              trim = FALSE, adjust = 1.5) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
+              trim = FALSE, adjust = 1.5, scale = "width") +
+  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+  #              alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
+  scale_color_manual(values = myColor) +
   scale_fill_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
@@ -142,13 +144,14 @@ pprom <- ggplot(e) +
   labs(y="ASMtuple",x = "") +
   facet_grid(~chr)
 
+#ggsave("curvesNscatters/test1.png",pprom)
 
 #generate impr from other script, and use it here
 p4 <- cowplot::plot_grid(pfull, pprom, impr, ncol=1, nrow = 3, 
                          labels = c("A","B","C"),
                          align = "v",
                          axis = "lr")
-ggplot2::ggsave("curvesNscatters/chromboxplots_cow2.png", p4, 
+ggplot2::ggsave("curvesNscatters/chromboxplots_cow_opt2.png", p4, 
                 width = 10, height = 13)
 
 #### make bigwigs ####

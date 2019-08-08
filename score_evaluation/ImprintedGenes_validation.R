@@ -74,14 +74,15 @@ e$Gender <- ifelse(e$sample %in% 1:3, "Male", "Female")
 
 #plot
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
-greys <- RColorBrewer::brewer.pal(9, "Greys")[7]
 
 impr <- ggplot(e) +
-  #geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = greys) +
-  geom_violin(aes(x=sample, y=valueasm, fill=Gender), color = greys,
-              trim = FALSE, adjust = 2) +
+  geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
+              trim = FALSE, adjust = 2, scale = "width") +
+  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+  #              alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
+  scale_color_manual(values = myColor) +
   theme_bw() +
   theme(strip.background = element_rect(colour = "black", fill = "white"),
         text = element_text(size = 15),
