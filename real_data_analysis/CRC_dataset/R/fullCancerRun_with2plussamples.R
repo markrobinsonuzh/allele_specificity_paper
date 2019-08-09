@@ -21,6 +21,7 @@ reference_file <- "/home/Shared_taupo/data/annotation/Human/GRCH37/Bisulfite_Gen
 
 #Split reads and extract methylation according to allele
 rds <- extract_bams(bam_files, vcf_files, sample_names, reference_file, cores=6, coverage = 2)
+save(rds,file="data/extracted_bams.RData")
 derASM <- calc_derivedasm(rds)
 
 #save(derASM, file = "../data/derASM_fullCancer.RData")
@@ -136,45 +137,11 @@ dames_noncimp <- dames_noncimp[dames_noncimp$FDR <= 0.05 & dames_noncimp$cluster
 dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical") #0
 dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical")#0
 
+#Genes with known LOI
 MEG3 <- GRanges(14, IRanges(101245747,101327368)) 
 GNAS <- GRanges(20, IRanges(57414773,57486247))
 H19 <- GRanges(11,IRanges(2016406,2022700))
 IGF2 <- GRanges(11,IRanges(2150342,2162468))
-
-#OVerlap with DMRs
-load("tupledames_cimp.RData")
-load("tupledames_cimpfix2.RData")
-cimpfix <- dames_cimp
-load("tupledames_noncimpfix.RData")
-noncimpfix <- dames_noncimp
-#load("tupledames_cimp_emp.RData")
-load("tupledames_noncimp_emp.RData")
-
-GRnoncimp2 <- GRanges(dames_noncimp$chr, 
-                      IRanges(dames_noncimp$start, dames_noncimp$end),
-                      A = dames_noncimp$meanTstat,
-                      pval = dames_noncimp$pvalSimes,
-                      FDR = dames_noncimp$FDR) #SIMES
-
-GRcimp <- GRanges(dames_cimp$chr, 
-                  IRanges(dames_cimp$start, dames_cimp$end),
-                  A = dames_cimp$meanTstat,
-                  FDR = dames_cimp$FDR)
-
-GRnoncimp <- GRanges(dames_noncimp$chr, 
-                     IRanges(dames_noncimp$start, dames_noncimp$end),
-                     A = dames_noncimp$meanTstat,
-                     pval = dames_noncimp$pvalEmp,
-                     FDR = dames_noncimp$FDR)
-
-#get DMRs
-load("../../../Shared_penticton/data/seq/mirco_mets_mbdseq/Data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
-DMRsfilt <- DMRs[DMRs$qval <= 0.05] #13,220
-seqlevels(GRnoncimp) <- paste0("chr",seqlevels(GRnoncimp))
-over <- findOverlaps(GRnoncimp, DMRsfilt)
-
-length(GRnoncimp[unique(queryHits(over))])
-head(GRnoncimp[-unique(queryHits(over))])
 
 
 #Some methylcircles
