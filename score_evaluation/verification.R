@@ -1,5 +1,5 @@
 ###########################################################################################
-# R script to compare true snp-ASM to the tuple-ASM in a single sample. Make some roc 
+# R script to compare true snp-ASM to the tuple-ASM per sample. Make some ROC 
 # curves
 #
 # BS-seq data set with 6 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
@@ -15,7 +15,7 @@ library(iCOBRA)
 library(ggplot2)
 
 ####Get ASM score ####---------------------------------------------------------------------
-load("data/derASM_fullCancer.RData") #single site derived-true asm
+load("data/derASM_fullcancer2.RData") #single site derived-true asm
 load("data/tupleASM_fullCancer.RData") #tuple derived-true asm
 load("data/tuplederASM_fullCancer2.RData") #<-- from generateTupleTables.R script
 
@@ -36,7 +36,6 @@ am <- data.table::fread(allelicfile, select = c(1,2,5))
 #read in amrfinder score
 amrfile <- "../amrfinder/NORM1.amr"
 amr <- data.table::fread(amrfile, select = c(1:3,5))
-
 
 
 #Choose a sample to compare the score
@@ -112,6 +111,8 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
   scoreGR <- scoreGR[!is.na(assay(tuple.derived_ASM_matrix,"der.ASM")[,number]) &
                        !is.na(assays(tuple.derived_ASM_matrix)[["snp.table"]][,number])]
   
+  #remove cov below 5
+  scoreGR <- scoreGR[scoreGR$coverage != "0"]
   print(length(scoreGR))
   
   return(scoreGR)
@@ -123,12 +124,12 @@ chooseSample <- function(tuple.derived_ASM_matrix, ASM_score_matrix, scoreGR,
 #below =  vector of upper limit coverages
 
 x <- chooseSample(tuple.derASM, ASM, asmscoreGR, 7, 
-                  c(5,10,50), c(9,49,3000), am, amr)
+                  c(5,10,50), c(9,49,4000), am, amr)
 
 #### Plot scores with eachother ####
 
 xtab <- as.data.frame(x) #237,323
-xtab$coverage <- gsub("50-3000", ">= 50", xtab$coverage)
+xtab$coverage <- gsub("50-4000", ">= 50", xtab$coverage)
 xtab$coverage <- factor(xtab$coverage, 
                         levels = c("5-9","10-49", ">= 50"))
 myColor <- RColorBrewer::brewer.pal(9, "Set1")
@@ -209,13 +210,14 @@ roc <- rbind(roc2,roc3)
 roc <- roc[roc$splitval != "overall",]
 roc$splitval <- gsub("coverage:5-9", "coverage = 5-9", roc$splitval)
 roc$splitval <- gsub("coverage:10-49", "coverage = 10-49", roc$splitval)
-roc$splitval <- gsub("coverage:50-3000", "coverage >= 50", roc$splitval)
+roc$splitval <- gsub("coverage:50-4000", "coverage >= 50", roc$splitval)
 
 roc$splitval <- factor(roc$splitval, 
                        levels = c("coverage = 5-9","coverage = 10-49", "coverage >= 50"))
 
 roc$method <- gsub("asm_tuple", "ASMtuple",roc$method)
-roc$method <- factor(roc$method, levels = c("ASMtuple","beta","allelicmeth","amr"))
+roc$method <- gsub("amr", "amrfinder",roc$method)
+roc$method <- factor(roc$method, levels = c("ASMtuple","beta","allelicmeth","amrfinder"))
 
 ggplot(roc, aes(FPR,TPR, color = method)) + 
   geom_line(size = 1) +
@@ -226,4 +228,4 @@ ggplot(roc, aes(FPR,TPR, color = method)) +
   labs(color = "Score") +
   facet_wrap(~real+splitval, nrow = 3, ncol = 3) +
   scale_color_manual(values = myColor)
-ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced_withamr.png")
+ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced_withamr_fix.png")
