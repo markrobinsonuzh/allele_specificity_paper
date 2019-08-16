@@ -44,7 +44,7 @@ ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
 #MV plot
 ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
 
-#### play with clust length given maxGap####
+#### play with clust length given maxGap ####
 
 #for sim1
 # clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 20)
@@ -69,7 +69,7 @@ beta <- 2.5
 minb <- 0.35 # 0.15 too small for lmfit to consider it a difference
 maxb <- 0.75 
 
-pDiff <- 0.5 #this should affect the k choice
+pDiff <- 0.8 #this should affect the k choice
 cluster.ids <- unique(clust) #3229, 1038 
 diffClusts <- 1:floor(pDiff*length(cluster.ids)) #645 
 
@@ -87,6 +87,9 @@ realregs <- data.frame(chr=sapply(cluster.ids,function(Index) chr[clust == Index
 
 #create 50 more simulations to run the methods
 
+draw_sims <- function(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
+                      cluster.ids, chr, starts, ends, realregs, original,
+                      trend, ggfile){ #for find_dames
 all_perf <- list()
 all_points <- list()
 
@@ -177,21 +180,24 @@ for(j in 1:50){
   #### Apply all methods ####
   
   #simes
-  regs <- find_dames(fakeDerAsm, mod, maxGap = 100)
+  regs <- find_dames(fakeDerAsm, mod, maxGap = 100, trend = trend)
   regsGR <- GRanges(regs$chr, IRanges(regs$start, regs$end), 
                     clusterL = regs$clusterL, pval = regs$pvalSimes, FDR = regs$FDR)
   
   #empirical
   
-  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.2)
+  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.2,
+                      trend = trend)
   regs1GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                      clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
   
-  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.5)
+  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.5,
+                      trend = trend)
   regs2GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                     clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
   
-  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.8)
+  regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.8,
+                      trend = trend)
   regs3GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                      clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
 
@@ -296,11 +302,12 @@ ggplot(allperftab) +
              size = 5, fill = "white") +
   scale_shape_identity() +
   theme_bw()
-ggsave("curvesNscatters/powerFDR_means.png")
+ggsave(sprintf("curvesNscatters/%s", ggfile))
+
+}
 
 
-
-
-
-
+draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
+                      cluster.ids, chr, starts, ends, realregs, original,
+                      FALSE, "powerFDR_sims_pdiff08.png")
 
