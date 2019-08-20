@@ -78,8 +78,8 @@ myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 impr <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
               trim = FALSE, adjust = 2, scale = "width") +
-  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
-  #              alpha = 0,outlier.shape = NA) +
+  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+                alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
   scale_color_manual(values = myColor) +

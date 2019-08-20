@@ -66,8 +66,8 @@ myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 pfull <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
               trim = FALSE, adjust = 1.5, scale = "width") +
-  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
-  #              alpha = 0,outlier.shape = NA) +
+  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+               alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
   scale_fill_manual(values = myColor) +
   scale_color_manual(values = myColor) +
@@ -129,12 +129,14 @@ uniQ <- unique(queryHits(over))
 ASM_mat.inproms <- ASM_mat[uniQ,]
 
 e <- get_e(ASM_mat.inproms)
+e$chr <- ifelse(e$chr == "chrX", "chrX (promoters)", e$chr)
+e$chr <- ifelse(e$chr == "chr3", "chr3 (promoters)", e$chr)
 
 pprom <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
               trim = FALSE, adjust = 1.5, scale = "width") +
-  # geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
-  #              alpha = 0,outlier.shape = NA) +
+  geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
+                alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
   scale_color_manual(values = myColor) +
   scale_fill_manual(values = myColor) +
@@ -151,7 +153,7 @@ p4 <- cowplot::plot_grid(pfull, pprom, impr, ncol=1, nrow = 3,
                          labels = c("A","B","C"),
                          align = "v",
                          axis = "lr")
-ggplot2::ggsave("curvesNscatters/chromboxplots_cow_opt2.png", p4, 
+ggplot2::ggsave("curvesNscatters/chromboxplots_cow_opt3.png", p4, 
                 width = 10, height = 13)
 
 #### make bigwigs ####
