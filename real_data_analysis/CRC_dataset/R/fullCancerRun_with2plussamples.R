@@ -69,41 +69,17 @@ dames_cimp <- find_dames(derASM, mod, coef = 1, contrast = cont,
                             pvalAssign = "empirical", maxGap = 100) 
 
 #use ASMstat
-refmeth <- assay(derASM, "ref.meth")
-altmeth <- assay(derASM, "alt.meth")
-
-refcov <- assay(derASM, "ref.cov")
-altcov <- assay(derASM, "alt.cov")
-
-prop <- (refmeth+altmeth)/(refcov+altcov)
-
-ASMstat <- ((refmeth/refcov) - (altmeth/altcov)) /
-  sqrt(prop * (1 - prop) * ((1/refcov) + (1/altcov)))
-assay(derASM, "der.ASM") <- abs(ASMstat) #and run the above
-
-#Plot methyl_circles 
-snp2 <- GRanges(9, IRanges(99983847, width = 1)) #este 
-dame <- GRanges(9,IRanges(99983700,99983917)) #con este
-
-path <- "/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/"
-
-m1 <- methyl_circle_plot(snp2, vcfFile = gsub("/home/",path, metadata$V4[2]),
-                   bamFile = gsub("/home/",path,metadata$V3[2]), 
-                   refFile = gsub("/home/",path,reference_file),
-                   sampleName = "CRC2",
-                   dame = dame,
-                   pointSize = 2)
-                   
-m2 <- methyl_circle_plot(snp2, vcfFile = gsub("/home/",path,metadata$V4[8]),
-                   bamFile = gsub("/home/",path,metadata$V3[8]), 
-                   refFile = gsub("/home/",path,reference_file),
-                   sampleName = "NORM2",
-                   dame = dame,
-                   pointSize = 2)
-
-m4 <- cowplot::plot_grid(m2,m1, ncol=1, nrow = 2, labels = c("NORM","CRC"))
-ggplot2::ggsave("MCircle_plots/MethylcirclesSNP_fullmapq.png", m4, width = 12, height = 10)
-
+# refmeth <- assay(derASM, "ref.meth")
+# altmeth <- assay(derASM, "alt.meth")
+# 
+# refcov <- assay(derASM, "ref.cov")
+# altcov <- assay(derASM, "alt.cov")
+# 
+# prop <- (refmeth+altmeth)/(refcov+altcov)
+# 
+# ASMstat <- ((refmeth/refcov) - (altmeth/altcov)) /
+#   sqrt(prop * (1 - prop) * ((1/refcov) + (1/altcov)))
+# assay(derASM, "der.ASM") <- abs(ASMstat) #and run the above
 
 
 #### tuple mode ####
@@ -159,40 +135,10 @@ dames_noncimp <- dames_noncimp[dames_noncimp$FDR <= 0.05 & dames_noncimp$cluster
 dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical") #0
 dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical")#0
 
-#Genes with known LOI
-MEG3 <- GRanges(14, IRanges(101245747,101327368)) 
-GNAS <- GRanges(20, IRanges(57414773,57486247))
-H19 <- GRanges(11,IRanges(2016406,2022700))
-IGF2 <- GRanges(11,IRanges(2150342,2162468))
-
-
-#Some methylcircles
-trimmedMEG3 <- GRanges(12,IRanges(98850698,98851011))   
-m1 <- methyl_circle_plotCpG(trimmedMEG3,
-                      bamFile = gsub("/home/",path,metadata$V3[2]), 
-                      refFile = gsub("/home/",path,reference_file),
-                      dame = trimmedMEG3,
-                      pointSize = 1,
-                      order = TRUE)
-m2 <- methyl_circle_plotCpG(trimmedMEG3,
-                            bamFile = gsub("/home/",path,metadata$V3[8]), 
-                            refFile = gsub("/home/",path,reference_file),
-                            dame = trimmedMEG3,
-                            pointSize = 1,
-                            order = TRUE)
-
-m4 <- cowplot::plot_grid(m2,m1, ncol=1, nrow = 2, labels = c("NORM","CRC"))
-ggplot2::ggsave("MCircle_plots/MethylcirclesCpG_topDAME.png", m4, width = 10, 
-                height = 12)
-
 #### build bigwigs ####
 
 sapply(colnames(derASM), make_bigwig, scoreObj = derASM, folder =".." , 
        chromsizesFile = "/home/Shared_taupo/steph/reference/hg19.chrom.sizes.mod")
 
 sapply(colnames(ASM), make_bigwig, scoreObj = ASM, folder =".." , 
-       chromsizesFile = "/home/Shared_taupo/steph/reference/hg19.chrom.sizes.mod")
-
-#with ASMstat
-sapply(colnames(derASM), make_bigwig, scoreObj = derASM, folder ="../.." , 
        chromsizesFile = "/home/Shared_taupo/steph/reference/hg19.chrom.sizes.mod")
