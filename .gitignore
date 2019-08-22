@@ -5,3 +5,5 @@
 MCircle_plots
 curvesNscatters
 *.RData
+*.bed*
+*.xlsx
