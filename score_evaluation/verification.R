@@ -134,9 +134,15 @@ xtab$coverage <- factor(xtab$coverage,
                         levels = c("5-9","10-49", ">= 50"))
 myColor <- RColorBrewer::brewer.pal(9, "Set1")
 
+over <- findOverlaps(x,slopGR) #from ImprintedGenes script
+xtab_impr <- xtab[unique(queryHits(over)),]
+
 #asmtuple
 p1 <- ggplot(xtab, aes(asm_tuple,derTrue_asm)) +
   geom_point(color = myColor[1]) +
+  geom_point(data=xtab_impr, aes(asm_tuple,derTrue_asm), color = myColor[6]) +
+  scale_x_continuous(trans='sqrt') +
+  scale_y_continuous(trans='sqrt') +
   facet_wrap(~coverage) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
@@ -145,7 +151,10 @@ p1 <- ggplot(xtab, aes(asm_tuple,derTrue_asm)) +
 
 #allelicmeth
 p2 <- ggplot(xtab, aes(allelicmeth,derTrue_asm)) +
-  geom_point(color = myColor[2]) +
+  geom_point(color = myColor[3]) +
+  geom_point(data=xtab_impr, aes(allelicmeth,derTrue_asm), color = myColor[6]) +
+  scale_x_continuous(trans='sqrt') +
+  scale_y_continuous(trans='sqrt') +
   facet_wrap(~coverage) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
@@ -154,7 +163,10 @@ p2 <- ggplot(xtab, aes(allelicmeth,derTrue_asm)) +
 
 #beta
 p3 <-  ggplot(xtab, aes(beta,derTrue_asm)) +
-  geom_point(color = myColor[3]) +
+  geom_point(color = myColor[2]) +
+  geom_point(data=xtab_impr, aes(beta,derTrue_asm), color = myColor[6]) +
+  scale_x_continuous(trans='sqrt') +
+  scale_y_continuous(trans='sqrt') +
   facet_wrap(~coverage) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
@@ -162,7 +174,7 @@ p3 <-  ggplot(xtab, aes(beta,derTrue_asm)) +
   labs(title = "Scaled beta", x = "scaled beta", y = "ASMsnp")
 
 p4 <- cowplot::plot_grid(p1,p2,p3, ncol=1, nrow = 3, align="v")
-ggplot2::ggsave("curvesNscatters/scoreScatters.png", p4, width = 12, height = 12)
+ggplot2::ggsave("curvesNscatters/scoreScatters_withimpr.png", p4, width = 12, height = 12)
 
 ### Make curve ####-------------------------------------------------------------------------
 
@@ -171,8 +183,8 @@ real2 <- ifelse(x$derTrue_asm >= 0.5, 1, 0)
 real3 <- ifelse(x$derTrue_asm >= 0.8, 1, 0)
 
 #use new statASM
-real2 <- ifelse(x$stat_asm >= 7, 1, 0)
-real3 <- ifelse(x$stat_asm >= 10, 1, 0)
+#real2 <- ifelse(x$stat_asm >= 7, 1, 0)
+#real3 <- ifelse(x$stat_asm >= 10, 1, 0)
 
 #get AUCs
 methodsl <- list(x$asm_tuple,x$beta, x$allelicmeth, x$amr)

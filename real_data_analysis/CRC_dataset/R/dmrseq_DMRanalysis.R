@@ -61,6 +61,7 @@ DMRsnon <- dmrseq(bs=bsnon, testCovariate="group", cutoff = 0.05,
 save(DMRsnon, file = "data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 
 #Load dames
+load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 load("data/tupledames_cimp.RData")
 load("data/tupledames_noncimp.RData")
 
@@ -103,3 +104,68 @@ filt_over <- function(DMRsfilt, dames){
  
 filt_over(DMRscimp, dames_cimp)
 filt_over(DMRs, dames_noncimp)
+
+#Plot mean methylation of CRC vs normal in top DAMEs over top DMRS
+
+bsrel <- BiSeq::rawToRel(BSr) #26,959,049
+dmrmeth <- methLevel(bsrel) 
+
+bsrel.sub <- bsrel[rowSums(!is.nan(dmrmeth)) >= 10,] #6,260,325
+grbs <- rowRanges(bsrel.sub)
+dmrmeth <- methLevel(bsrel.sub)
+
+load("tupledames_cimp_emp.RData")
+
+plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
+  
+  #Get average meth across groups per site
+  dmrmethCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == crc])
+  dmrmethNORMCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == norm])
+  
+  over <- findOverlaps(DMRs[1:regnum],grbs)
+  cluster.ids <- 1:regnum
+  
+  #get average per DMR
+  cimp_perreg <- sapply(cluster.ids, function(Index){ 
+    mean(dmrmethCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
+  })
+  
+  cimpnorm_perreg <- sapply(cluster.ids, function(Index){ 
+    mean(dmrmethNORMCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
+  })
+  
+  #get average per DAME
+  
+  gr_cimpdames <- GRanges(paste0("chr",DAMEs$chr),
+                          IRanges(DAMEs$start, DAMEs$end))
+  over <- findOverlaps(gr_cimpdames[1:regnum],grbs)
+  
+  cimp_perdame <- sapply(cluster.ids, function(Index){ 
+    mean(dmrmethCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
+  })
+  
+  cimpnorm_perdame <- sapply(cluster.ids, function(Index){ 
+    mean(dmrmethNORMCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
+  })
+  
+  methtab <- data.frame(cimp = c(cimp_perreg,cimp_perdame),
+                        norm = c(cimpnorm_perreg,cimpnorm_perdame),
+                        reg = c(rep("DMR",regnum),rep("DAME",regnum)))
+  
+  p <- ggplot(methtab) + 
+    geom_point(aes(norm, cimp, color = reg), alpha = 0.5) + 
+    coord_cartesian(xlim = 0:1, ylim = 0:1) +
+    theme_bw()
+  #ggsave(sprintf("curvesNscatters/%s",file))
+  return(p)
+}
+
+p1 <- plot_methsPerreg("cimp", "NORMAL.cimp", 1000, "methVals_DAMEvsDMR_cimp.png", 
+                 DMRscimp, dames_cimp)
+
+p2 <- plot_methsPerreg("non", "NORMAL.non", 1000, "methVals_DAMEvsDMR_non.png", 
+                 DMRs, dames_noncimp)
+
+m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("CIMP","non-CIMP"))
+ggsave("curvesNscatters/methVals_DAMEvsDMR.png", m4, width = 8, 
+       height = 10)

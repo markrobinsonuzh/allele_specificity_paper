@@ -14,7 +14,7 @@ library(ggplot2)
 
 
 #load known imprinted regions
-impr <- read.csv("noplacenta.csv") #113
+impr <- read.csv("data/noplacenta.csv") #113
 
 #get coords
 ensembl <- useMart("ensembl")

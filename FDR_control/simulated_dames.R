@@ -69,7 +69,7 @@ beta <- 2.5
 minb <- 0.35 # 0.15 too small for lmfit to consider it a difference
 maxb <- 0.75 
 
-pDiff <- 0.8 #this should affect the k choice
+pDiff <- 0.2 #this should affect the k choice
 cluster.ids <- unique(clust) #3229, 1038 
 diffClusts <- 1:floor(pDiff*length(cluster.ids)) #645 
 
@@ -89,7 +89,7 @@ realregs <- data.frame(chr=sapply(cluster.ids,function(Index) chr[clust == Index
 
 draw_sims <- function(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
                       cluster.ids, chr, starts, ends, realregs, original,
-                      trend, ggfile){ #for find_dames
+                      trend){ #for find_dames, ggfile
 all_perf <- list()
 all_points <- list()
 
@@ -261,14 +261,6 @@ allperftab <- data.frame(sim = rep(1:50, lengths(tpr)),
 
 allperftab <- unite(allperftab, unique_id, c(sim, method), sep="_", remove = FALSE)
 
-#allperftabfilt <- allperftab[!is.nan(allperftab$FDR) & !is.infinite(allperftab$FDR),]
-
-# summperf <- allperftab %>%
-#   filter(!is.na(FDR)) %>%
-#   dplyr::group_by(method, sim) %>%
-#   dplyr::summarise(meanTPR=mean(TPR), meanFDR = mean(FDR)) %>%
-#   as.data.frame()
-
 #points
 tpr <- lapply(all_points, function(x){x$TPR})
 
@@ -289,10 +281,8 @@ summpoints$satis <- ifelse(summpoints$meanFDR <= summpoints$thr,16,21)
 
 myColor <- RColorBrewer::brewer.pal(8, "Set1")
 
-ggplot(allperftab) +
+gplot <- ggplot(allperftab) +
   geom_line(aes(FDR, TPR, color=method, group=unique_id), alpha = 0.11) +
-  #geom_smooth(aes(FDR, TPR, color=method, group=unique_id), na.rm = TRUE, method = "auto") +
-  #geom_line(data = summperf, aes(meanFDR, meanTPR, color=method, group=unique_id)) +
   scale_x_continuous(trans='sqrt') +
   scale_color_manual(values = myColor) +
   labs(color = "Method") +
@@ -302,12 +292,32 @@ ggplot(allperftab) +
              size = 5, fill = "white") +
   scale_shape_identity() +
   theme_bw()
-ggsave(sprintf("curvesNscatters/%s", ggfile))
+
+return(gplot)
+#ggsave(sprintf("curvesNscatters/%s", ggfile))
 
 }
 
 
-draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
+pdiff08 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
                       cluster.ids, chr, starts, ends, realregs, original,
-                      FALSE, "powerFDR_sims_pdiff08.png")
+                      FALSE)
 
+pdiff02 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+                     cluster.ids, chr, starts, ends, realregs, original,
+                     FALSE)
+
+#pdiff 0.5 (from paper)
+trendfalse <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+                     cluster.ids, chr, starts, ends, realregs, original,
+                     FALSE)
+
+#pdiff 0.5
+trendtrue <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+                        cluster.ids, chr, starts, ends, realregs, original,
+                        TRUE)
+
+m4 <- cowplot::plot_grid(pdiff02,pdiff08,trendtrue, ncol=1, nrow = 3, 
+                         labels = c("A", "B", "C"))
+ggplot2::ggsave("curvesNscatters/powerFDR_otherparams.png", m4, width = 6, 
+                height = 12)

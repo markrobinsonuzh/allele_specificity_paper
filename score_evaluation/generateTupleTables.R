@@ -11,7 +11,8 @@
 library(GenomicRanges)
 library(SummarizedExperiment)
 
-load("data/derASM_fullCancer.RData")
+#load("data/derASM_fullCancer.RData")
+load("data/derASM_fullcancer2.RData")
 load("data/tupleASM_fullCancer.RData")
 
 #### Get CpG and snp keys from derived-asm table ####--------------------------------------------------------
@@ -140,4 +141,4 @@ tuple.derASM <- SummarizedExperiment(assays=S4Vectors::SimpleList(der.ASM = pose
                                                                   alt.meth = tuple.alt.meth),
                                      rowRanges=asmscoreGR_end)
 
-save(tuple.derASM, file = "data/tuplederASM_fullCancer.RData")
+save(tuple.derASM, file = "data/tuplederASM_fullCancer2.RData")
