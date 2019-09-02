@@ -66,7 +66,9 @@ dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, maxGap = 100
 
 #perms
 dames_cimp <- find_dames(derASM, mod, coef = 1, contrast = cont, 
-                            pvalAssign = "empirical", maxGap = 100) 
+                            pvalAssign = "empirical", maxGap = 100)
+dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, 
+                         pvalAssign = "empirical", maxGap = 100)
 
 #use ASMstat
 # refmeth <- assay(derASM, "ref.meth")
@@ -128,12 +130,11 @@ cont <- limma::makeContrasts(grpCRC_cimp-grpNORM_cimp, grpCRC_non-grpNORM_non,
                              levels = mod)
 
 #get DAMEs
-dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) #4037
-dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) #260
-dames_noncimp <- dames_noncimp[dames_noncimp$FDR <= 0.05 & dames_noncimp$clusterL > 1,] #231
+dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) 
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) 
 
-dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical") #0
-dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical")#0
+dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical")
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical", Q = 0.5)
 
 #### build bigwigs ####
 

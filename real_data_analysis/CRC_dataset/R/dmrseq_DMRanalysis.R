@@ -61,7 +61,6 @@ DMRsnon <- dmrseq(bs=bsnon, testCovariate="group", cutoff = 0.05,
 save(DMRsnon, file = "data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 
 #Load dames
-load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 load("data/tupledames_cimp.RData")
 load("data/tupledames_noncimp.RData")
 
@@ -113,14 +112,13 @@ dmrmeth <- methLevel(bsrel)
 bsrel.sub <- bsrel[rowSums(!is.nan(dmrmeth)) >= 10,] #6,260,325
 grbs <- rowRanges(bsrel.sub)
 dmrmeth <- methLevel(bsrel.sub)
-
-load("tupledames_cimp_emp.RData")
+group <- colData(BSr)$group
 
 plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
   
   #Get average meth across groups per site
-  dmrmethCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == crc])
-  dmrmethNORMCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == norm])
+  dmrmethCIMP <- rowMeans(dmrmeth[,group == crc])
+  dmrmethNORMCIMP <- rowMeans(dmrmeth[,group == norm])
   
   over <- findOverlaps(DMRs[1:regnum],grbs)
   cluster.ids <- 1:regnum
@@ -152,11 +150,13 @@ plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
                         norm = c(cimpnorm_perreg,cimpnorm_perdame),
                         reg = c(rep("DMR",regnum),rep("DAME",regnum)))
   
+  
   p <- ggplot(methtab) + 
     geom_point(aes(norm, cimp, color = reg), alpha = 0.5) + 
     coord_cartesian(xlim = 0:1, ylim = 0:1) +
     theme_bw()
   #ggsave(sprintf("curvesNscatters/%s",file))
+  #return(p)
   return(p)
 }
 
@@ -167,5 +167,5 @@ p2 <- plot_methsPerreg("non", "NORMAL.non", 1000, "methVals_DAMEvsDMR_non.png",
                  DMRs, dames_noncimp)
 
 m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("CIMP","non-CIMP"))
-ggsave("curvesNscatters/methVals_DAMEvsDMR.png", m4, width = 8, 
+ggsave("curvesNscatters/methVals_DAMEvsDMR_simes_fix.png", m4, width = 8, 
        height = 10)
