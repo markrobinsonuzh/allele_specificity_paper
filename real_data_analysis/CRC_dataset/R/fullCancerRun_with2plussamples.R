@@ -35,8 +35,6 @@ filt <- rowSums(!is.na(assay(derASM, "der.ASM"))) >= 10
 derASM <- derASM[filt,]
 
 #Plot checks
-myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,3,5,8)]
-
 x <- assay(derASM,"der.ASM")
 #xsub <- x[,grp %in% c("CRC_cimp","NORM_cimp")]
 means <- rowMeans(x)
@@ -95,20 +93,6 @@ load("data/tupleASM_fullCancer.RData")
 #Filter
 filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10)
 ASM <- ASM[filt,] #2,015,001, 1,849,831
-
-#MDS
-colnames(derASM) <- c(paste0("C",1:6),paste0("N",1:6))
-colnames(ASM) <- c(paste0("C",1:6),paste0("N",1:6))
-m1 <- methyl_MDS_plot(derASM, group = metadata$V2, color = myColor, pointSize = 6, adj = 0.04) +
-  theme(legend.position = "none")
-m2 <- methyl_MDS_plot(ASM, group = metadata$V2, color = myColor, pointSize = 6, adj = 0.05) +
-  theme(legend.position = "none")
-
-#Paper figure
-m4 <- cowplot::plot_grid(m2,m1, ncol=2, nrow = 2, labels = c("A","B","C"),
-                         rel_widths = c(1,1), rel_heights = 1)
-
-ggplot2::ggsave("curvesNscatters/MDSboth.png", m4, width = 8, height = 6)
 
 #MD and MV plots
 x <- assay(ASM,"asm")
