@@ -1,117 +1,11 @@
-#September 2019
+#!/usr/bin/env Rscript
 
-#How to explore DAMEs using DAMEfinder :)
-
-library(GenomicRanges)
-library(SummarizedExperiment)
-library(cowplot)
-#library(DAMEfinder)
-devtools::load_all("../DAMEfinder_git/")
-
-#Make sure this are done
-load("data/tupledames_cimp.RData")
-load("data/tupledames_noncimp.RData")
-load("data/tupleASM_fullCancer.RData")
-load("data/derASM_fullcancer2.RData")
-metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
-colData(ASM)$group <- metadata$V2  
-colData(derASM)$group <- metadata$V2  
-colData(ASM)$samples <- colnames(ASM)
-
-#I have a list of DAMEs like so, and I know what score I used to get it (e.g. ASMsnp or ASMtuple):
-head(dames_cimp) #<- ASM_tuple
-
-#inputs
-DAME <- GRanges(9, IRanges(99984206,99984364))
-ASM
-derASM
-myColor <- RColorBrewer::brewer.pal(9, "Set1")
-
-#Step1
-#Case 1.A plot with ASMtuple object
-dame_track(DAME, ASM = ASM) + scale_color_manual(values = myColor)
-
-#Case 1.B (if I have it) plot with ASMsnp object
-dame_track(DAME, window = 10, derASM = derASM) + scale_color_manual(values = myColor)
-
-#Case 1.C (If I have them) plot with both objects
-dame_track(DAME, window = 10, derASM = derASM, ASM = ASM) + scale_color_manual(values = myColor)
-
-#Step 2
-reference_file <- "/home/Shared_taupo/data/annotation/Human/Ensembl_GRCh37.91/GRCh37.91.fa"
-metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
-bam_files <- metadata$V3
-vcf_files <- metadata$V4 
-sample_names <- metadata$V1
-path <- "/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/"
-
-#Case 2.A
-methyl_circle_plotCpG(cpgsite = DAME, #Here I would put the location of a CpG if i wanted
-                      bamFile = gsub("/home/",path,metadata$V3[2]), 
-                      refFile = gsub("/home/",path,reference_file),
-                      dame = DAME, 
-                      pointSize = 1,
-                      order = TRUE)
-
-
-methyl_circle_plotCpG(cpgsite = DAME, #Here I would put the location of a CpG if i wanted
-                      bamFile = gsub("/home/",path,metadata$V3[2]), 
-                      refFile = gsub("/home/",path,reference_file),
-                      dame = DAME, 
-                      pointSize = 1.5,
-                      sampleName = "C2",
-                      sampleReads = TRUE,
-                      order = TRUE)
-
-
-#Case 2.B 
-snp <- GRanges(9, IRanges(99984349,width = 1))
-methyl_circle_plot(snp, 
-                   vcfFile = gsub("/home/",path, metadata$V4[2]),
-                   bamFile = gsub("/home/",path,metadata$V3[2]), 
-                   refFile = gsub("/home/",path,reference_file),
-                   sampleName = "C2",
-                   dame = DAME,
-                   pointSize = 2,
-                   sampleReads = TRUE)
-
-methyl_circle_plot(snp, 
-                   vcfFile = gsub("/home/",path, metadata$V4[8]),
-                   bamFile = gsub("/home/",path,metadata$V3[8]), 
-                   refFile = gsub("/home/",path,reference_file),
-                   sampleName = "N2",
-                   dame = DAME,
-                   pointSize = 2,
-                   sampleReads = TRUE)
-
-##Do you think I should make a function to include all these plots at once?
-## or provide code to do it? it a loop trough all the samples basically
-
-#Case 2.C
-
-allps <- mapply(methyl_circle_plot,
-                vcfFile = gsub("/home/",path, metadata$V4), 
-                bamFile = gsub("/home/",path,metadata$V3),
-                sampleName = sample_names,
-                MoreArgs=list(
-                  snp = snp,
-                  refFile = gsub("/home/",path,reference_file),
-                  dame = DAME,
-                  sampleReads = TRUE,
-                  numReads = 15,
-                  pointSize = 1,
-                  letterSize = 1
-                ))
-
-
-cowplot::plot_grid(plotlist = allps, nrow = 2, ncol = 6)
-
-# pdf("All_Mplots.pdf")
-# lapply(allps, function(i) i)
-# dev.off()
-
-
-#### For paper ####
+#########################################################################################
+# R script plot several scores per region
+# TBS-seq data CRCs Vs Norm
+#
+# Stephany Orjuela, September 2019
+#########################################################################################
 
 #supp fig of opposite DAMEs
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5,1,3,4,8:9)]
@@ -192,9 +86,7 @@ megcimp <- dame_track_forpap(DAME,
                  #positions = 400,
                  #derASM = derASM[,seq(2,12,2)],
                  ASM = ASM[,seq(2,12,2)],
-                 colvec = myColor) +
-  labs(color = "Tissue")
-  
+                 colvec = myColor)
 
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(3,8)]
 megnon <- dame_track_forpap(DAME, 
@@ -241,5 +133,3 @@ cowplot::plot_grid(megcimp, megnon, h19cimp, gnascimp, gnasnon, nrow = 5,
 ggplot2::ggsave(filename = "curvesNscatters/LOI_func.png",
                 width = 10, height = 10)
 
-#https://www.cell.com/action/showPdf?pii=S0167-7799%2818%2930115-X
-#https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btz125/5341422
