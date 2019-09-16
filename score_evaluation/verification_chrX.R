@@ -111,6 +111,37 @@ truth <- data.frame(
 score <- as.data.frame(mcols(x)[,2:5])
 rownames(truth) <- rownames(score)
 
+#Plot precision(PPV)-recall(TPR)
+library("ROCR")
+truth2 <- data.frame(asm_tuple = truth$real2,
+                     beta = truth$real2,
+                     allelicmeth = truth$real2,
+                     amr = truth$real2) 
+pred <- prediction(score,truth2)
+perf <- performance(pred,"prec","rec")
+
+pr.dat <- data.frame(Recall = c(perf@x.values[[1]],perf@x.values[[2]],
+                          perf@x.values[[3]],perf@x.values[[4]]),
+           Score = factor(c(rep("ASMtuple",length(perf@x.values[[1]])), 
+                     rep("methdeviation",length(perf@x.values[[2]])), 
+                     rep("allelicmeth",length(perf@x.values[[3]])),
+                     rep("amrfinder",length(perf@x.values[[4]]))),
+                     levels = c("ASMtuple","methdeviation","allelicmeth","amrfinder")),
+           Precision = c(perf@y.values[[1]],perf@y.values[[2]],
+                             perf@y.values[[3]],perf@y.values[[4]]))
+
+
+myColor <- RColorBrewer::brewer.pal(9, "Set1")
+ggplot(pr.dat, aes(Recall,Precision, color = Score)) + 
+  geom_line(size = 1) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines"), 
+        text = element_text(size = 12)) +
+  labs(color = "Score") +
+  scale_color_manual(values = myColor)
+ggsave("curvesNscatters/PrecRecall_chromX_proms.png")
+
 #run iCOBRa for different true-thresholds
 cobradat <- COBRAData(score = score,
                       truth = truth)
@@ -128,7 +159,7 @@ roc$method <- gsub("amr", "amrfinder",roc$method)
 roc$method <- gsub("beta", "methdeviation",roc$method)
 roc$method <- factor(roc$method, levels = c("ASMtuple","methdeviation","allelicmeth","amrfinder"))
 
-myColor <- RColorBrewer::brewer.pal(9, "Set1")
+
 ggplot(roc, aes(FPR,TPR, color = method)) + 
   geom_line(size = 1) +
   theme_bw() + 
