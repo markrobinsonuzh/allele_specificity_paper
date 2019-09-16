@@ -117,7 +117,7 @@ cont <- limma::makeContrasts(grpCRC_cimp-grpNORM_cimp, grpCRC_non-grpNORM_non,
 dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) 
 dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) 
 
-dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical")
+dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical",Q = 0.5)
 dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical", Q = 0.5)
 
 #### build bigwigs ####

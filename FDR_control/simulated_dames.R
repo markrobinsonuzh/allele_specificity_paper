@@ -31,6 +31,7 @@ x <- assay(derASM,"der.ASM")
 prop.clust <- x[,7:12]
 original <- prop.clust
 
+
 means <- rowMeans(prop.clust)
 diffs <- apply(prop.clust, 1, function(w){mean(w[1:3]) - mean(w[4:6])})
 var <- rowVars(prop.clust)
@@ -38,11 +39,11 @@ dd <- as.data.frame(cbind(var, means, diffs))
 head(dd)
 
 #MD plot
-ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
+MD1 <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
   theme_bw()
 
 #MV plot
-ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
+MV1 <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
 
 #### play with clust length given maxGap ####
 
@@ -57,8 +58,10 @@ maxcien <- data.frame(clusL = rle(clust)$length, maxGap = 100)
 # clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 1000)
 # maxmil <- data.frame(clusL = rle(clust)$length, maxGap = 1000)
 # 
-# clustab <- rbind(max20,maxcien,maxmil)
-# ggplot(clustab, aes(clusL)) + geom_histogram() + facet_grid(~maxGap) + theme_bw()
+#clustab <- rbind(max20,maxcien,maxmil)
+clustab <- maxcien
+ggplot(clustab, aes(clusL)) + geom_histogram() + theme_bw() + labs(x= "Number of CpGs")
+ggsave("curvesNscatters/sim_cluster_sizes.png")
 
 
 #### inverse sampling ####
@@ -72,6 +75,23 @@ maxb <- 0.75
 pDiff <- 0.2 #this should affect the k choice
 cluster.ids <- unique(clust) #3229, 1038 
 diffClusts <- 1:floor(pDiff*length(cluster.ids)) #645 
+
+
+#plot runif and beta
+fullb <- qbeta(runif(length(diffClusts), minb, maxb), alpha, beta)
+p1 <- ggplot() + geom_histogram(aes(fullb), bins = 6) + theme_bw() + labs(x = "Effect sizes")
+
+un <- runif(length(diffClusts), minb, maxb)
+p2 <- ggplot() + geom_histogram(aes(un), bins = 7) + theme_bw() + labs(x = "Unif(0.35,0.75)")
+
+ran <- seq(0, 1, length = 100)
+db <- dbeta(ran, alpha,beta)
+d3 <- data.frame(p = ran, density = db)
+p3 <- ggplot(d3, aes(p,density)) + geom_line() + theme_bw()
+
+cowplot::plot_grid(p1,p2,p3, nrow = 3, ncol = 1, labels = c("A","B","C"))
+ggsave("curvesNscatters/beta_and_unif_hists.png", width = 6, 
+       height = 10)
 
 
 #get real coordinates to start from
@@ -306,6 +326,8 @@ pdiff08 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust,
 pdiff02 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
                      cluster.ids, chr, starts, ends, realregs, original,
                      FALSE)
+ggplot2::ggsave("curvesNscatters/powerFDR_pdiff02.png", pdiff02)
+
 
 #pdiff 0.5 (from paper)
 trendfalse <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
