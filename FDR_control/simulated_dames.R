@@ -303,7 +303,7 @@ myColor <- RColorBrewer::brewer.pal(8, "Set1")
 
 gplot <- ggplot(allperftab) +
   geom_line(aes(FDR, TPR, color=method, group=unique_id), alpha = 0.11) +
-  scale_x_continuous(trans='sqrt') +
+  scale_x_continuous(trans='sqrt', breaks = c(0.01,0.05,0.10,0.5)) +
   scale_color_manual(values = myColor) +
   labs(color = "Method") +
   geom_vline(xintercept = c(0.01,0.05,0.1), linetype = 2) +
@@ -314,8 +314,6 @@ gplot <- ggplot(allperftab) +
   theme_bw()
 
 return(gplot)
-#ggsave(sprintf("curvesNscatters/%s", ggfile))
-
 }
 
 
@@ -326,7 +324,8 @@ pdiff08 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust,
 pdiff02 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
                      cluster.ids, chr, starts, ends, realregs, original,
                      FALSE)
-ggplot2::ggsave("curvesNscatters/powerFDR_pdiff02.png", pdiff02)
+ggplot2::ggsave("curvesNscatters/powerFDR_pdiff02.png", pdiff02, width = 6, 
+                height = 5)
 
 
 #pdiff 0.5 (from paper)
