@@ -7,8 +7,44 @@
 # Stephany Orjuela, September 2019
 #########################################################################################
 
+library(DAMEfinder)
+library(ggplot2)
+library(SummarizedExperiment)
+library(cowplot)
+
+metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+metadata$V2 <- ifelse(metadata$V2 == "NORM_non", "NORM_noncimp", metadata$V2)
+metadata$V2 <-ifelse(metadata$V2 == "CRC_non", "CRC_noncimp", metadata$V2)
+
+#snp asm
+load("data/derASM_fullcancer2.RData")
+filt <- rowSums(!is.na(assay(derASM, "der.ASM"))) >= 10
+derASM <- derASM[filt,]
+colData(derASM)$group <- metadata$V2  
+colnames(derASM) <- c(paste0("C",1:6),paste0("N",1:6))
+colData(derASM)$samples <- colnames(derASM)
+colData(derASM)$samples == colnames(derASM)
+
+#tuple asm
+load("data/tupleASM_fullCancer.RData")
+filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10)
+# ASM_trans <- ASM[filt,]
+# colData(ASM_trans)$group <- metadata$V2  
+# colnames(ASM_trans) <- c(paste0("C",1:6),paste0("N",1:6))
+# colData(ASM_trans)$samples <- colnames(ASM_trans)
+# colData(ASM_trans)$samples == colnames(ASM_trans)
+
+#load("data/tupleASM_fullCancer_notrans.RData")
+ASM <- ASM[filt,]
+colData(ASM)$group <- metadata$V2  
+colnames(ASM) <- c(paste0("C",1:6),paste0("N",1:6))
+colData(ASM)$samples <- colnames(ASM)
+colData(ASM)$samples == colnames(ASM)
+
 #supp fig of opposite DAMEs
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5,1,3,4,8:9)]
+
+DAME <- GRanges(9, IRanges(99984206,99984364))
 
 a <- dame_track(DAME, window = 10, 
            derASM = derASM[,seq(2,12,2)],
@@ -39,10 +75,6 @@ ggplot2::ggsave(filename = "curvesNscatters/ASMopposDAME_reads.png", plot = b,
 #figure 5
 #MDS
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,3,5,8)]
-colnames(derASM) <- c(paste0("C",1:6),paste0("N",1:6))
-colnames(ASM) <- c(paste0("C",1:6),paste0("N",1:6))
-colData(ASM)$samples <- colnames(ASM)
-colData(derASM)$samples == colnames(derASM)
 
 m1 <- methyl_MDS_plot(derASM, group = metadata$V2, pointSize = 6, adj = 0.04) +
   #theme(legend.position = "") + 
@@ -77,11 +109,12 @@ ggplot2::ggsave("curvesNscatters/MDSboth_newfunc.png", width = 10, height = 9)
 
 #figure 6
 source("custom_scoretracks.R")
+source("custom_mediantracks.R")
 
 #MEG3
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5)]
 DAME <- GRanges(14, IRanges(101291540,101293480))
-megcimp <- dame_track_forpap(DAME, 
+megcimp <- dame_track_median_forpap(DAME, 
                  window = 10, 
                  #positions = 400,
                  #derASM = derASM[,seq(2,12,2)],
@@ -89,47 +122,43 @@ megcimp <- dame_track_forpap(DAME,
                  colvec = myColor)
 
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(3,8)]
-megnon <- dame_track_forpap(DAME, 
+megnon <- dame_track_median_forpap(DAME, 
                   window = 10, 
                   #positions = 400,
                   #derASM = derASM[,seq(2,12,2)],
                   ASM = ASM[,seq(1,11,2)],
-                  colvec = myColor) +
-  labs(color = "Tissue")
+                  colvec = myColor)
 
 #h19
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5)]
 DAME <- GRanges(11, IRanges(2021017,2021260))
-h19cimp <- dame_track_forpap(DAME, 
+h19cimp <- dame_track_median_forpap(DAME, 
                       window = 10, 
                       #positions = 400,
                       #derASM = derASM[,seq(2,12,2)],
                       ASM = ASM[,seq(2,12,2)],
-                      colvec = myColor) +
-  labs(color = "Tissue")
+                      colvec = myColor)
 
 #gnas
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5)]
 DAME <- GRanges(20, IRanges(57425758,57428036))
-gnascimp <- dame_track_forpap(DAME, 
+gnascimp <- dame_track_median_forpap(DAME, 
                       #window = 10, 
                       positions = 700,
                       #derASM = derASM[,seq(2,12,2)],
                       ASM = ASM[,seq(2,12,2)],
-                      colvec = myColor) +
-  labs(color = "Tissue")
+                      colvec = myColor)
 
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(3,8)]
-gnasnon <- dame_track_forpap(DAME, 
+gnasnon <- dame_track_median_forpap(DAME, 
                        #window = 10, 
                        positions = 700,
                        #derASM = derASM[,seq(2,12,2)],
                        ASM = ASM[,seq(1,11,2)],
-                       colvec = myColor) +
-  labs(color = "Tissue")
+                       colvec = myColor)
 
 cowplot::plot_grid(megcimp, megnon, h19cimp, gnascimp, gnasnon, nrow = 5, 
                    ncol = 1, labels = c("A","","B", "C",""), align = "v")
-ggplot2::ggsave(filename = "curvesNscatters/LOI_func.png",
+ggplot2::ggsave(filename = "curvesNscatters/LOI_func_medians.png",
                 width = 10, height = 10)
 

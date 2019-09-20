@@ -221,6 +221,8 @@ tes <- subsetByOverlaps(sime_non,DMRsfilt, invert = TRUE) #93
 #Plot DAMEs not hitting DMRs
 load("data/tupleASM_fullCancer.RData")
 metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+metadata$V2 <- ifelse(metadata$V2 == "NORM_non", "NORM_noncimp", metadata$V2)
+metadata$V2 <-ifelse(metadata$V2 == "CRC_non", "CRC_noncimp", metadata$V2)
 colData(ASM)$group <- metadata$V2  
 colData(ASM)$samples <- colnames(ASM)
 source("custom_scoretracks.R")

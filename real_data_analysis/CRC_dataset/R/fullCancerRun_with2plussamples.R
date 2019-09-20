@@ -64,9 +64,9 @@ dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, maxGap = 100
 
 #perms
 dames_cimp <- find_dames(derASM, mod, coef = 1, contrast = cont, 
-                            pvalAssign = "empirical", maxGap = 100)
+                            pvalAssign = "empirical", maxGap = 100, Q = 0.5)
 dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, 
-                         pvalAssign = "empirical", maxGap = 100)
+                         pvalAssign = "empirical", maxGap = 100, Q = 0.5)
 
 #use ASMstat
 # refmeth <- assay(derASM, "ref.meth")
@@ -85,8 +85,11 @@ dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont,
 #### tuple mode ####
 
 tuple_files <- metadata$V5
-tuple_list <- read_tuples(files = tuple_files, sample_names, min_coverage = 5)
-ASM <- calc_asm(sample_list = tuple_list)
+tuple_list <- read_tuples(files = tuple_files, sample_names, minCoverage = 5) 
+ASM <- calc_asm(sampleList = tuple_list, transform = keepval) 
+#keepval <- function(values){values * 1}
+#use transform  = keepval for plotting
+#save(ASM, file = "tupleASM_fullCancer_notrans.RData")
 #save(ASM, file = "tupleASM_fullCancer.RData")
 load("data/tupleASM_fullCancer.RData")
 
