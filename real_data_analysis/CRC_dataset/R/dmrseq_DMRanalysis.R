@@ -63,7 +63,7 @@ DMRsnon <- dmrseq(bs=bsnon, testCovariate="group", cutoff = 0.05,
 
 save(DMRsnon, file = "data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 
-#### Compare DAMEs to DMRs ####
+#### Compare DAMEs to DMRs (Table1) ####
 load("data/tupledames_cimp.RData")
 load("data/tupledames_noncimp.RData")
 
@@ -202,7 +202,7 @@ load("data/tupledames_noncimp.RData")
 sime_non <- GRanges(dames_noncimp$chr, IRanges(dames_noncimp$start, dames_noncimp$end),
                     pval = dames_noncimp$pvalSimes,FDR = dames_noncimp$FDR)
 
-load("data/tupledames_cimp_emp.RData")
+#load("data/tupledames_cimp_emp.RData")
 load("data/tupledames_cimp_emp_repeat.RData")
 emp_cimp <- GRanges(dames_cimp$chr, IRanges(dames_cimp$start, dames_cimp$end),
                     pval = dames_cimp$pvalEmp,FDR = dames_cimp$FDR)
