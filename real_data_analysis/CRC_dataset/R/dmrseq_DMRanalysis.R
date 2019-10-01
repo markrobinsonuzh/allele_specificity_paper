@@ -67,8 +67,8 @@ save(DMRsnon, file = "data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 load("data/tupledames_cimp.RData")
 load("data/tupledames_noncimp.RData")
 
-#load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
-#load("data/cimpCRCsVsNORM_DMRs_dmrseq.RData")
+load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
+load("data/cimpCRCsVsNORM_DMRs_dmrseq.RData")
 
 filt_over <- function(DMRsfilt, dames){
   #positive beta is hypo
@@ -154,44 +154,29 @@ plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
     mean(dmrmethNORMCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
   })
   
-  
-  # get average for overlapping regs (take DMR as the overlaped reg)
-  overboth <- subsetByOverlaps(DMRs[1:regnum], gr_cimpdames[1:regnum])
-  over <- findOverlaps(overboth,grbs)
-  
-  over_perdame <- sapply(cluster.ids, function(Index){ 
-    mean(dmrmethCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
-  })
-  
-  overnorm_perdame <- sapply(cluster.ids, function(Index){ 
-    mean(dmrmethNORMCIMP[subjectHits(over)[queryHits(over) == Index]], na.rm = TRUE)
-  })
-  
-  
-  methtab <- data.frame(cimp = c(cimp_perreg,cimp_perdame, over_perdame),
-                        norm = c(cimpnorm_perreg,cimpnorm_perdame, overnorm_perdame),
-                        reg = c(rep("DMR",regnum),rep("DAME",regnum), 
-                                rep("BOTH", length(overboth))))
-  
+  methtab <- data.frame(cimp = c(cimp_perreg,cimp_perdame),
+                        norm = c(cimpnorm_perreg,cimpnorm_perdame),
+                        reg = c(rep("DMR",regnum),rep("DAME",regnum))) 
+
   
   p <- ggplot(methtab) + 
     geom_point(aes(norm, cimp, color = reg), alpha = 0.5) + 
     coord_cartesian(xlim = 0:1, ylim = 0:1) +
     theme_bw()
-  #ggsave(sprintf("curvesNscatters/%s",file))
-  #return(p)
-  return(methtab)
+  return(p)
 }
 
-p1 <- plot_methsPerreg("cimp", "NORMAL.cimp", 1000, "methVals_DAMEvsDMR_cimp.png", 
-                 DMRscimp, dames_cimp)
+p1 <- plot_methsPerreg("cimp", "NORMAL.cimp", 250, "methVals_DAMEvsDMR_cimp.png", 
+                 DMRscimp, dames_cimp) + 
+  labs(color = "Region", x = "normal_cimp", y = "cimp")
 
-p2 <- plot_methsPerreg("non", "NORMAL.non", 1000, "methVals_DAMEvsDMR_non.png", 
-                 DMRs, dames_noncimp)
+p2 <- plot_methsPerreg("non", "NORMAL.non", 250, "methVals_DAMEvsDMR_non.png", 
+                 DMRs, dames_noncimp) +
+  labs(color = "Region", x = "normal_noncimp", y = "noncimp")
 
-m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("CIMP","non-CIMP"))
-ggsave("curvesNscatters/methVals_DAMEvsDMR_simes_both_1000.png", m4, width = 8, 
-       height = 10)
+m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("A","B"))
+ggsave("curvesNscatters/methVals_DAMEvsDMR_simes_both_250.png", m4, width = 6, 
+       height = 8)
 
 
 #### get DAMEs that are not detected with DMRs ####
