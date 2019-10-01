@@ -11,6 +11,8 @@ library(SummarizedExperiment)
 library(DAMEfinder)
 
 metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+#blacklist <- rtracklayer::import.bed("hg19-blacklist.v2.bed.gz")
+#seqlevels(blacklist) <- gsub("chr", "", seqlevels(blacklist))
 
 #### SNP mode ####
 
@@ -25,31 +27,48 @@ save(rds,file="data/extracted_bams.RData")
 derASM <- calc_derivedasm(rds)
 
 #save(derASM, file = "../data/derASM_fullCancer.RData")
-load("data/derASM_fullcancer2.RData")
+load("data/derASM_fullcancer2.RData") #1,453,873
 
 #derASM <- GenomeInfoDb::sortSeqlevels(derASM) #only necessary for old calc_derivedasm()
 #derASM <- sort(derASM)
 
 #Filter
-filt <- rowSums(!is.na(assay(derASM, "der.ASM"))) >= 10
-derASM <- derASM[filt,]
+filt <- c(rowSums(!is.na(assay(derASM, "der.ASM"))) >= 10
+          & rowMeans(assay(derASM,"ref.cov") + assay(derASM,"alt.cov"), 
+                     na.rm = TRUE) < 200)
+derASM <- derASM[filt,] #55,717
 
 #Plot checks
-myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,3,5,8)]
-
 x <- assay(derASM,"der.ASM")
-#xsub <- x[,grp %in% c("CRC_cimp","NORM_cimp")]
+#x <- abs(ASMstat)
+
 means <- rowMeans(x)
 diffs <- apply(x, 1, function(w){mean(w[1:6]) - mean(w[7:12])})
 var <- rowVars(x)
-dd <- as.data.frame(cbind(var, means, diffs))
+meancov <- rowMeans(assay(derASM,"ref.cov") + assay(derASM,"alt.cov"))
+dd <- as.data.frame(cbind(var, means, diffs, meancov))
 
 #MD plot
-ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
-  theme_bw()#+ ylim(c(-0.4,0.4))
+md <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
+  theme_bw() +
+  geom_density_2d()
 
 #MV plot
-ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
+MV <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d()
+
+#var Vs cov
+vacov <- ggplot(dd, aes(var, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d()
+
+#mean Vs cov
+mecov <- ggplot(dd, aes(means, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d()
+
+a <- cowplot::plot_grid(md, MV, vacov, mecov, nrow = 2, ncol = 2,
+                        labels = c("A","B","C","D"))
+ggplot2::ggsave(filename = "curvesNscatters/CRCdata_ASMsnp_diagnostics.png")
+              
 
 #Set design
 grp <- factor(metadata$V2)
@@ -66,55 +85,68 @@ dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, maxGap = 100
 
 #perms
 dames_cimp <- find_dames(derASM, mod, coef = 1, contrast = cont, 
-                            pvalAssign = "empirical", maxGap = 100) 
+                            pvalAssign = "empirical", maxGap = 100, Q = 0.5)
+dames_noncimp <- find_dames(derASM, mod, coef = 2, contrast = cont, 
+                         pvalAssign = "empirical", maxGap = 100, Q = 0.5)
 
 #use ASMstat
 # refmeth <- assay(derASM, "ref.meth")
 # altmeth <- assay(derASM, "alt.meth")
-# 
+#  
 # refcov <- assay(derASM, "ref.cov")
 # altcov <- assay(derASM, "alt.cov")
 # 
 # prop <- (refmeth+altmeth)/(refcov+altcov)
-# 
+#  
 # ASMstat <- ((refmeth/refcov) - (altmeth/altcov)) /
-#   sqrt(prop * (1 - prop) * ((1/refcov) + (1/altcov)))
-# assay(derASM, "der.ASM") <- abs(ASMstat) #and run the above
+#    sqrt(prop * (1 - prop) * ((1/refcov) + (1/altcov)))
+
 
 
 #### tuple mode ####
 
 tuple_files <- metadata$V5
-tuple_list <- read_tuples(files = tuple_files, sample_names, min_coverage = 5)
-ASM <- calc_asm(sample_list = tuple_list)
+tuple_list <- read_tuples(files = tuple_files, sample_names, minCoverage = 5) 
+ASM <- calc_asm(sampleList = tuple_list, transform = keepval) 
+#keepval <- function(values){values * 1}
+#use transform  = keepval for plotting
+#save(ASM, file = "tupleASM_fullCancer_notrans.RData")
 #save(ASM, file = "tupleASM_fullCancer.RData")
-load("data/tupleASM_fullCancer.RData")
+load("data/tupleASM_fullCancer.RData") #3,589,472
 
 #Filter
-filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10)
-ASM <- ASM[filt,] #2,015,001, 1,849,831
-
-#MDS
-colnames(derASM) <- c(paste0("C",1:6),paste0("N",1:6))
-colnames(ASM) <- c(paste0("C",1:6),paste0("N",1:6))
-m1 <- methyl_MDS_plot(derASM, group = metadata$V2, color = myColor, pointSize = 6, adj = 0.04) +
-  theme(legend.position = "none")
-m2 <- methyl_MDS_plot(ASM, group = metadata$V2, color = myColor, pointSize = 6, adj = 0.05) +
-  theme(legend.position = "none")
-
-#Paper figure
-m4 <- cowplot::plot_grid(m2,m1, ncol=2, nrow = 2, labels = c("A","B","C"),
-                         rel_widths = c(1,1), rel_heights = 1)
-
-ggplot2::ggsave("curvesNscatters/MDSboth.png", m4, width = 8, height = 6)
+filt <- c(rowSums(assay(ASM, "cov") >= 10 & !is.na(assay(ASM, "cov"))) >= 10
+          & rowMeans(assay(ASM, "cov"), na.rm = TRUE) < 200)
+ASM <- ASM[filt,] # 1,846,858
 
 #MD and MV plots
 x <- assay(ASM,"asm")
 means <- rowMeans(x)
-var <- rowVars(x)
 diffs <- apply(x, 1, function(w){mean(w[1:6]) - mean(w[7:12])})
-dd <- as.data.frame(cbind(diffs, means))
-ggplot(dd, aes(means, diffs)) + geom_point(alpha=0.2) + theme_bw()
+var <- rowVars(x)
+meancov <- rowMeans(assay(ASM,"cov"))
+dd <- as.data.frame(cbind(var, means, diffs, meancov))
+
+#MD plot
+md <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
+  geom_density_2d() +
+  theme_bw()
+
+#MV plot
+MV <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d()
+
+#var Vs cov
+vacov <- ggplot(dd, aes(var, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d() #+ scale_y_continuous(trans = "log2")
+
+#mean Vs cov
+mecov <- ggplot(dd, aes(means, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
+  geom_density_2d()
+
+b <- cowplot::plot_grid(md, MV, vacov, mecov, nrow = 2, ncol = 2, 
+                        labels = c("A","B","C","D"))
+ggplot2::ggsave(filename = "curvesNscatters/CRCdata_ASMtuple_diagnostics.png", b)
 
 #Set design
 grp <- factor(metadata$V2)
@@ -128,12 +160,11 @@ cont <- limma::makeContrasts(grpCRC_cimp-grpNORM_cimp, grpCRC_non-grpNORM_non,
                              levels = mod)
 
 #get DAMEs
-dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) #4037
-dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) #260
-dames_noncimp <- dames_noncimp[dames_noncimp$FDR <= 0.05 & dames_noncimp$clusterL > 1,] #231
+dames_cimp <- find_dames(ASM, mod, contrast = cont, coef = 1, maxGap = 200) 
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200) 
 
-dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical") #0
-dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical")#0
+dames_cimp <- find_dames(ASM, mod, contrast = cont,coef = 1, maxGap = 200, pvalAssign = "empirical",Q = 0.5)
+dames_noncimp <- find_dames(ASM, mod, contrast = cont,coef = 2, maxGap = 200, pvalAssign = "empirical", Q = 0.5)
 
 #### build bigwigs ####
 

@@ -9,6 +9,9 @@
 #########################################################################################
 
 library(dmrseq)
+library(BiSeq)
+library(ggplot2)
+library(DAMEfinder)
 
 load("/home/sorjuela/serrated_pathway_paper/BiSulf/Data/CRCdata/BSrawCRC.RData")
 bs <- BSseq(chr = seqnames(BSr), 
@@ -60,19 +63,22 @@ DMRsnon <- dmrseq(bs=bsnon, testCovariate="group", cutoff = 0.05,
 
 save(DMRsnon, file = "data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
 
-#Load dames
-load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
+#### Compare DAMEs to DMRs (Table1) ####
 load("data/tupledames_cimp.RData")
 load("data/tupledames_noncimp.RData")
 
-#Filter
-#positive beta is hypo
+load("data/noncimpCRCsVsNORM_DMRs_dmrseq.RData")
+load("data/cimpCRCsVsNORM_DMRs_dmrseq.RData")
+
 filt_over <- function(DMRsfilt, dames){
-  sum(DMRsfilt$beta < 0 & DMRsfilt$qval < 0.05)
-  sum(DMRsfilt$beta > 0 & DMRsfilt$qval < 0.05) 
-  DMRsfilthyper <- DMRsfilt[DMRsfilt$beta < 0 & DMRsfilt$qval < 0.05]
+  #positive beta is hypo
+  sum(DMRsfilt$beta < 0 & DMRsfilt$qval <= 0.05)
+  sum(DMRsfilt$beta > 0 & DMRsfilt$qval <= 0.05) 
+  DMRsfilthyper <- DMRsfilt[DMRsfilt$beta < 0 & DMRsfilt$qval <= 0.05]
+  message("hyper DMRs:")
   print(length(DMRsfilthyper))
-  DMRsfilthypo <- DMRsfilt[DMRsfilt$beta > 0 & DMRsfilt$qval < 0.05]
+  DMRsfilthypo <- DMRsfilt[DMRsfilt$beta > 0 & DMRsfilt$qval <= 0.05]
+  message("hypo DMRs:")
   print(length(DMRsfilthypo))
   
   GRcimp <- GRanges(dames$chr, 
@@ -101,26 +107,26 @@ filt_over <- function(DMRsfilt, dames){
   message("hypo DMRs that hit dames ",length(DMRsfilthypo[unique(subjectHits(over2))]))
   
 }
- 
+
+#Number for table 1 in paper
 filt_over(DMRscimp, dames_cimp)
 filt_over(DMRs, dames_noncimp)
 
 #Plot mean methylation of CRC vs normal in top DAMEs over top DMRS
-
-bsrel <- BiSeq::rawToRel(BSr) #26,959,049
+bsrel <- rawToRel(BSr) #26,959,049
 dmrmeth <- methLevel(bsrel) 
 
-bsrel.sub <- bsrel[rowSums(!is.nan(dmrmeth)) >= 10,] #6,260,325
+bsrel.sub <- bsrel[rowSums(totalReads(BSr) >= 10) >= 10,] #2,856,397
+
 grbs <- rowRanges(bsrel.sub)
 dmrmeth <- methLevel(bsrel.sub)
-
-load("tupledames_cimp_emp.RData")
+group <- colData(BSr)$group
 
 plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
   
   #Get average meth across groups per site
-  dmrmethCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == crc])
-  dmrmethNORMCIMP <- rowMeans(dmrmeth[,colData(bsrel.sub)$group == norm])
+  dmrmethCIMP <- rowMeans(dmrmeth[,group == crc])
+  dmrmethNORMCIMP <- rowMeans(dmrmeth[,group == norm])
   
   over <- findOverlaps(DMRs[1:regnum],grbs)
   cluster.ids <- 1:regnum
@@ -150,22 +156,94 @@ plot_methsPerreg <- function(crc, norm, regnum, file, DMRs, DAMEs){
   
   methtab <- data.frame(cimp = c(cimp_perreg,cimp_perdame),
                         norm = c(cimpnorm_perreg,cimpnorm_perdame),
-                        reg = c(rep("DMR",regnum),rep("DAME",regnum)))
+                        reg = c(rep("DMR",regnum),rep("DAME",regnum))) 
+
   
   p <- ggplot(methtab) + 
     geom_point(aes(norm, cimp, color = reg), alpha = 0.5) + 
     coord_cartesian(xlim = 0:1, ylim = 0:1) +
     theme_bw()
-  #ggsave(sprintf("curvesNscatters/%s",file))
   return(p)
 }
 
-p1 <- plot_methsPerreg("cimp", "NORMAL.cimp", 1000, "methVals_DAMEvsDMR_cimp.png", 
-                 DMRscimp, dames_cimp)
+p1 <- plot_methsPerreg("cimp", "NORMAL.cimp", 250, "methVals_DAMEvsDMR_cimp.png", 
+                 DMRscimp, dames_cimp) + 
+  labs(color = "Region", x = "normal_cimp", y = "cimp")
 
-p2 <- plot_methsPerreg("non", "NORMAL.non", 1000, "methVals_DAMEvsDMR_non.png", 
-                 DMRs, dames_noncimp)
+p2 <- plot_methsPerreg("non", "NORMAL.non", 250, "methVals_DAMEvsDMR_non.png", 
+                 DMRs, dames_noncimp) +
+  labs(color = "Region", x = "normal_noncimp", y = "noncimp")
 
-m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("CIMP","non-CIMP"))
-ggsave("curvesNscatters/methVals_DAMEvsDMR.png", m4, width = 8, 
-       height = 10)
+m4 <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("A","B"))
+ggsave("curvesNscatters/methVals_DAMEvsDMR_simes_both_250.png", m4, width = 6, 
+       height = 8)
+
+
+#### get DAMEs that are not detected with DMRs ####
+load("data/tupledames_cimp.RData")
+sime_cimp <- GRanges(dames_cimp$chr, IRanges(dames_cimp$start, dames_cimp$end), 
+                     pval = dames_cimp$pvalSimes,FDR = dames_cimp$FDR)
+load("data/tupledames_noncimp.RData")
+sime_non <- GRanges(dames_noncimp$chr, IRanges(dames_noncimp$start, dames_noncimp$end),
+                    pval = dames_noncimp$pvalSimes,FDR = dames_noncimp$FDR)
+
+#load("data/tupledames_cimp_emp.RData")
+load("data/tupledames_cimp_emp_repeat.RData")
+emp_cimp <- GRanges(dames_cimp$chr, IRanges(dames_cimp$start, dames_cimp$end),
+                    pval = dames_cimp$pvalEmp,FDR = dames_cimp$FDR)
+load("data/tupledames_noncimp_emp.RData")
+emp_non <- GRanges(dames_noncimp$chr, IRanges(dames_noncimp$start, dames_noncimp$end),
+                   pval = dames_noncimp$pvalEmp,FDR = dames_noncimp$FDR)
+
+
+DMRsfilt <- DMRs[DMRs$qval <= 0.05]
+seqlevels(DMRsfilt) <- gsub("chr","",seqlevels(DMRsfilt))
+
+sime_non <- sime_non[sime_non$FDR <= 0.05] #258
+
+tes <- subsetByOverlaps(sime_non,DMRsfilt, invert = TRUE) #93
+
+#Plot DAMEs not hitting DMRs
+load("data/tupleASM_fullCancer.RData")
+metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+metadata$V2 <- ifelse(metadata$V2 == "NORM_non", "NORM_noncimp", metadata$V2)
+metadata$V2 <-ifelse(metadata$V2 == "CRC_non", "CRC_noncimp", metadata$V2)
+colData(ASM)$group <- metadata$V2  
+colData(ASM)$samples <- colnames(ASM)
+source("custom_scoretracks.R")
+
+#non-CIMP
+myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(3,8)]
+#9 136658255-136658387
+a1 <- dame_track_forpap(dame = tes[2], ASM = ASM[,seq(1,11,2)], window = 2, colvec = myColor,
+                        plotMeth = TRUE)
+# b2 <- dame_track_forpap(dame = tes[3], ASM = ASM[,seq(1,11,2)], window = 3, colvec = myColor,
+#                  plotMeth = TRUE)
+# c3 <- dame_track(dame = tes[4], ASM = ASM[,seq(1,11,2)], window = 3, colvec = myColor)
+
+emp_non <- emp_non[emp_non$FDR <= 0.05] #119 non
+
+tes <- subsetByOverlaps(emp_non,DMRsfilt, invert = TRUE) #2
+
+a2 <- dame_track_forpap(dame = tes[1], ASM = ASM[,seq(1,11,2)], window = 3, colvec = myColor,
+                        plotMeth = TRUE)
+# b2 <- dame_track_forpap(dame = tes[2], ASM = ASM[,seq(1,11,2)], window = 3, colvec = myColor,
+#                  plotMeth =TRUE)
+
+#### CIMP
+DMRsfilt <- DMRscimp[DMRscimp$qval <= 0.05]
+seqlevels(DMRsfilt) <- gsub("chr","",seqlevels(DMRsfilt))
+
+sime_cimp <- sime_cimp[sime_cimp$FDR <= 0.05] #4051
+
+tes <- subsetByOverlaps(sime_cimp,DMRsfilt, invert = TRUE)
+myColor <- RColorBrewer::brewer.pal(9, "Set1")[c(2,5)]
+a3 <- dame_track_forpap(dame = tes[1], ASM = ASM[,seq(2,12,2)], window = 8, colvec = myColor,
+                        plotMeth = TRUE)
+b3 <- dame_track_forpap(dame = tes[3], ASM = ASM[,seq(2,12,2)], window = 1, colvec = myColor,
+                        plotMeth = TRUE)
+cowplot::plot_grid(a1,a2,a3,b3, nrow = 4, ncol = 1, align = "v", labels = c("A","","B",""))
+ggplot2::ggsave(filename = "curvesNscatters/DAMEnotinDMRs_combi.png",
+                width = 10, height = 12)
+
+

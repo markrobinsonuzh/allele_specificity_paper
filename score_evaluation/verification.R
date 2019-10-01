@@ -229,10 +229,12 @@ roc$splitval <- factor(roc$splitval,
 
 roc$method <- gsub("asm_tuple", "ASMtuple",roc$method)
 roc$method <- gsub("amr", "amrfinder",roc$method)
-roc$method <- factor(roc$method, levels = c("ASMtuple","beta","allelicmeth","amrfinder"))
+roc$method <- gsub("beta", "methdeviation",roc$method)
+roc$method <- factor(roc$method, levels = c("ASMtuple","methdeviation","allelicmeth","amrfinder"))
 
 ggplot(roc, aes(FPR,TPR, color = method)) + 
-  geom_line(size = 1) +
+  geom_line(size = 1.5) +
+  scale_x_continuous(breaks = seq(0,0.75, 0.25)) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
         panel.spacing = unit(0, "lines"), 
@@ -240,4 +242,5 @@ ggplot(roc, aes(FPR,TPR, color = method)) +
   labs(color = "Score") +
   facet_wrap(~real+splitval, nrow = 3, ncol = 3) +
   scale_color_manual(values = myColor)
-ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced_withamr_fix.png")
+ggsave("curvesNscatters/full_ROCs_icobraggplot_reduced_withamr_fix_methdev.png",
+       width = 8, height = 4.5)

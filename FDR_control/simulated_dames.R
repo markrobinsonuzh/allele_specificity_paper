@@ -31,6 +31,7 @@ x <- assay(derASM,"der.ASM")
 prop.clust <- x[,7:12]
 original <- prop.clust
 
+
 means <- rowMeans(prop.clust)
 diffs <- apply(prop.clust, 1, function(w){mean(w[1:3]) - mean(w[4:6])})
 var <- rowVars(prop.clust)
@@ -38,27 +39,30 @@ dd <- as.data.frame(cbind(var, means, diffs))
 head(dd)
 
 #MD plot
-ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
+MD1 <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
   theme_bw()
 
 #MV plot
-ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
+MV1 <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw()
 
 #### play with clust length given maxGap ####
-
-#for sim1
-# clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 20)
-# max20 <- data.frame(clusL = rle(clust)$length, maxGap = 20)
-
-#for sim2
+#20
+clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 20)
+max20 <- data.frame(clusL = rle(clust)$length, maxGap = 20)
+#100
 clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 100)
 maxcien <- data.frame(clusL = rle(clust)$length, maxGap = 100)
+#1000
+clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 1000)
+maxmil <- data.frame(clusL = rle(clust)$length, maxGap = 1000)
+ 
+clustab <- rbind(max20,maxcien,maxmil)
 
-# clust <- bumphunter::clusterMaker(as.character(seqnames(derASM)), start(derASM), maxGap = 1000)
-# maxmil <- data.frame(clusL = rle(clust)$length, maxGap = 1000)
-# 
-# clustab <- rbind(max20,maxcien,maxmil)
-# ggplot(clustab, aes(clusL)) + geom_histogram() + facet_grid(~maxGap) + theme_bw()
+ggplot(clustab, aes(clusL)) + geom_histogram() + 
+  theme_bw() + 
+  labs(x= "Number of CpGs") +
+  facet_grid(~maxGap)
+ggsave("curvesNscatters/sim_cluster_sizes.png")
 
 
 #### inverse sampling ####
@@ -74,6 +78,23 @@ cluster.ids <- unique(clust) #3229, 1038
 diffClusts <- 1:floor(pDiff*length(cluster.ids)) #645 
 
 
+#plot runif and beta
+fullb <- qbeta(runif(length(diffClusts), minb, maxb), alpha, beta)
+p1 <- ggplot() + geom_histogram(aes(fullb), bins = 6) + theme_bw() + labs(x = "Effect sizes")
+
+un <- runif(length(diffClusts), minb, maxb)
+p2 <- ggplot() + geom_histogram(aes(un), bins = 7) + theme_bw() + labs(x = "Unif(0.35,0.75)")
+
+ran <- seq(0, 1, length = 100)
+db <- dbeta(ran, alpha,beta)
+d3 <- data.frame(p = ran, density = db)
+p3 <- ggplot(d3, aes(p,density)) + geom_line() + theme_bw()
+
+cowplot::plot_grid(p1,p2,p3, nrow = 3, ncol = 1, labels = c("A","B","C"))
+ggsave("curvesNscatters/beta_and_unif_hists.png", width = 6, 
+       height = 10)
+
+
 #get real coordinates to start from
 chr <- as.character(seqnames(derASM))
 starts <- start(derASM)  
@@ -87,13 +108,13 @@ realregs <- data.frame(chr=sapply(cluster.ids,function(Index) chr[clust == Index
 
 #create 50 more simulations to run the methods
 
-draw_sims <- function(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
+draw_sims <- function(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, #same params
                       cluster.ids, chr, starts, ends, realregs, original,
-                      trend){ #for find_dames, ggfile
+                      trend, methlmfit = "ls"){ #for find_dames, ggfile
 all_perf <- list()
 all_points <- list()
 
-for(j in 1:50){
+for(j in 1:numsims){
   
   print(j)
   prop.clust <- x[,7:12]
@@ -180,24 +201,24 @@ for(j in 1:50){
   #### Apply all methods ####
   
   #simes
-  regs <- find_dames(fakeDerAsm, mod, maxGap = 100, trend = trend)
+  regs <- find_dames(fakeDerAsm, mod, maxGap = 100, trend = trend, method = methlmfit)
   regsGR <- GRanges(regs$chr, IRanges(regs$start, regs$end), 
                     clusterL = regs$clusterL, pval = regs$pvalSimes, FDR = regs$FDR)
   
   #empirical
   
   regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.2,
-                      trend = trend)
+                      trend = trend, method = methlmfit)
   regs1GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                      clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
   
   regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.5,
-                      trend = trend)
+                      trend = trend, method = methlmfit)
   regs2GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                     clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
   
   regs2 <- find_dames(fakeDerAsm, mod, maxGap = 100, pvalAssign = "empirical", Q = 0.8,
-                      trend = trend)
+                      trend = trend, method = methlmfit)
   regs3GR <- GRanges(regs2$chr, IRanges(regs2$start, regs2$end), segmentL = regs2$segmentL, 
                      clusterL = regs2$clusterL, pval  = regs2$pvalEmp, FDR = regs2$FDR)
 
@@ -254,7 +275,7 @@ for(j in 1:50){
 #lines
 tpr <- lapply(all_perf, function(x){x$TPR})
 
-allperftab <- data.frame(sim = rep(1:50, lengths(tpr)),
+allperftab <- data.frame(sim = rep(1:numsims, lengths(tpr)),
                          FDR = unlist(lapply(all_perf, function(x){x$FDR})),
                          TPR = unlist(tpr),
                          method = unlist(lapply(all_perf, function(x){x$method})))
@@ -264,7 +285,7 @@ allperftab <- unite(allperftab, unique_id, c(sim, method), sep="_", remove = FAL
 #points
 tpr <- lapply(all_points, function(x){x$TPR})
 
-allpointtab <- data.frame(sim = rep(1:50, lengths(tpr)),
+allpointtab <- data.frame(sim = rep(1:numsims, lengths(tpr)),
                           FDR = unlist(lapply(all_points, function(x){x$FDR})),
                           TPR = unlist(tpr),
                           method = unlist(lapply(all_points, function(x){x$method})),
@@ -283,7 +304,7 @@ myColor <- RColorBrewer::brewer.pal(8, "Set1")
 
 gplot <- ggplot(allperftab) +
   geom_line(aes(FDR, TPR, color=method, group=unique_id), alpha = 0.11) +
-  scale_x_continuous(trans='sqrt') +
+  scale_x_continuous(trans='sqrt', breaks = c(0.01,0.05,0.10,0.5)) +
   scale_color_manual(values = myColor) +
   labs(color = "Method") +
   geom_vline(xintercept = c(0.01,0.05,0.1), linetype = 2) +
@@ -294,30 +315,48 @@ gplot <- ggplot(allperftab) +
   theme_bw()
 
 return(gplot)
-#ggsave(sprintf("curvesNscatters/%s", ggfile))
-
 }
 
 
-pdiff08 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
-                      cluster.ids, chr, starts, ends, realregs, original,
-                      FALSE)
+#figure 3
+pdiff02 <- draw_sims(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, 
+                     cluster.ids, chr, starts, ends, realregs, original,
+                     FALSE)
+ggplot2::ggsave("curvesNscatters/powerFDR_pdiff02.png", pdiff02, width = 6, 
+                height = 5)
 
-pdiff02 <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+#supp fig 1
+
+#figure 3
+pdiff05 <- draw_sims(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, 
                      cluster.ids, chr, starts, ends, realregs, original,
                      FALSE)
 
-#pdiff 0.5 (from paper)
-trendfalse <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+#pdiff 0.2, len 20 (change above clust)
+len20 <- draw_sims(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, 
+                       cluster.ids, chr, starts, ends, realregs, original,
+                       TRUE)
+
+#pdiff 0.2, len 1000 (change above clust)
+len1000 <- draw_sims(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, 
                      cluster.ids, chr, starts, ends, realregs, original,
                      FALSE)
 
-#pdiff 0.5
-trendtrue <- draw_sims(numsims, x, alpha, beta, minb, maxb, diffClusts, clust, 
+#pdiff 0.2, len 100, trend true
+trendtrue <- draw_sims(numsims = 50, x, alpha, beta, minb, maxb, diffClusts, clust, 
                         cluster.ids, chr, starts, ends, realregs, original,
                         TRUE)
 
-m4 <- cowplot::plot_grid(pdiff02,pdiff08,trendtrue, ncol=1, nrow = 3, 
-                         labels = c("A", "B", "C"))
-ggplot2::ggsave("curvesNscatters/powerFDR_otherparams.png", m4, width = 6, 
-                height = 12)
+
+len20 <- len20 + theme(legend.position = "none")
+len1000 <- len1000 + theme(legend.position = "none")
+trendtrue <- trendtrue + theme(legend.position = "none")
+pdiff05 <- pdiff05 + theme(legend.position = "none")   
+
+legend <- cowplot::get_legend(trendtrue)
+
+m4 <- cowplot::plot_grid(len20, len1000, legend, trendtrue, pdiff05, ncol=3, nrow = 2, 
+                         labels = c("A", "B", "","C", "D"),
+                         rel_widths = c(1, 1, 0.3))
+ggplot2::ggsave("curvesNscatters/powerFDR_otherparams.png", m4, width = 8, 
+                height = 7)
