@@ -73,7 +73,7 @@ beta <- 2.5
 minb <- 0.35 # 0.15 too small for lmfit to consider it a difference
 maxb <- 0.75 
 
-pDiff <- 0.5 #this should affect the k choice
+pDiff <- 0.2 #this should affect the k choice
 cluster.ids <- unique(clust) #3229, 1038 
 diffClusts <- 1:floor(pDiff*length(cluster.ids)) #645 
 
