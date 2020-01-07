@@ -9,8 +9,10 @@
 
 library(SummarizedExperiment)
 library(DAMEfinder)
+library(ggplot2)
 
 metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
+sample_names <- metadata$V1
 #blacklist <- rtracklayer::import.bed("hg19-blacklist.v2.bed.gz")
 #seqlevels(blacklist) <- gsub("chr", "", seqlevels(blacklist))
 
@@ -18,7 +20,6 @@ metadata <- read.table("data/fullCancerSamples.txt", stringsAsFactors = FALSE)
 
 bam_files <- metadata$V3
 vcf_files <- metadata$V4 
-sample_names <- metadata$V1
 reference_file <- "/home/Shared_taupo/data/annotation/Human/GRCH37/Bisulfite_Genome.release91/GRCh37.91.fa"
 
 #Split reads and extract methylation according to allele
@@ -49,22 +50,33 @@ meancov <- rowMeans(assay(derASM,"ref.cov") + assay(derASM,"alt.cov"))
 dd <- as.data.frame(cbind(var, means, diffs, meancov))
 
 #MD plot
-md <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
-  theme_bw() +
-  geom_density_2d()
+md <- ggplot(dd, aes(means, diffs)) + 
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMsnp", y = "ASMsnp changes") +
+  theme_bw()
 
 #MV plot
-MV <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d()
+MV <- ggplot(dd, aes(means, var)) + 
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMsnp", y = "Variance ASMsnp") +
+  theme_bw()
 
 #var Vs cov
-vacov <- ggplot(dd, aes(var, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d()
+vacov <- ggplot(dd, aes(var, meancov)) + 
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Variance ASMsnp", y = "Average coverage") +
+  theme_bw()
 
 #mean Vs cov
-mecov <- ggplot(dd, aes(means, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d()
-
+mecov <- ggplot(dd, aes(means, meancov)) + 
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMsnp", y = "Average coverage") +
+  theme_bw() 
+#change axis names!
 a <- cowplot::plot_grid(md, MV, vacov, mecov, nrow = 2, ncol = 2,
                         labels = c("A","B","C","D"))
 ggplot2::ggsave(filename = "curvesNscatters/CRCdata_ASMsnp_diagnostics.png")
@@ -128,21 +140,30 @@ meancov <- rowMeans(assay(ASM,"cov"))
 dd <- as.data.frame(cbind(var, means, diffs, meancov))
 
 #MD plot
-md <- ggplot(dd, aes(means, diffs)) + geom_point(alpha = 0.2) +
-  geom_density_2d() +
+md <- ggplot(dd, aes(means, diffs)) + geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMtuple", y = "ASMtuple changes") +
   theme_bw()
 
 #MV plot
-MV <- ggplot(dd, aes(means, var)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d()
+MV <- ggplot(dd, aes(means, var)) + geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMtuple", y = "Variance ASMtuple") +
+  theme_bw()
 
 #var Vs cov
-vacov <- ggplot(dd, aes(var, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d() #+ scale_y_continuous(trans = "log2")
+vacov <- ggplot(dd, aes(var, meancov)) +
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Variance ASMtuple", y = "Average coverage") +
+  theme_bw()
 
 #mean Vs cov
-mecov <- ggplot(dd, aes(means, meancov)) + geom_point(alpha = 0.2) + theme_bw() +
-  geom_density_2d()
+mecov <- ggplot(dd, aes(means, meancov)) +
+  geom_bin2d() + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  labs(x = "Average ASMtuple", y = "Average coverage") +
+  theme_bw()
 
 b <- cowplot::plot_grid(md, MV, vacov, mecov, nrow = 2, ncol = 2, 
                         labels = c("A","B","C","D"))
