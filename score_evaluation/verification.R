@@ -137,17 +137,16 @@ myColor <- RColorBrewer::brewer.pal(9, "Set1")
 
 # over <- findOverlaps(x,slopGR) #from ImprintedGenes script
 # xtab_impr <- xtab[unique(queryHits(over)),]
-
-## Distributions
 xtabsub <- xtab[,c(7,9:13)]
 colnames(xtabsub) <- c("ASMsnp","ASMtuple","methdeviation","allelicmeth","amrfinder",
                        "coverage")
 
 xtabsub$threshold <- ifelse(xtabsub$ASMsnp >= 0.5, "ASMsnp >= 0.5", "ASMsnp < 0.5")
+
+## Distributions
 xtabsub <- reshape2::melt(xtabsub, 
                           id.vars = c("coverage", "threshold"),
                           variable.name = "Score")
-
 
 p1 <- ggplot(xtabsub, aes(value, color = coverage, fill = coverage)) + 
   theme_bw() + 
@@ -193,47 +192,57 @@ cowplot::plot_grid(p1,p2, labels = c("A","B"))
 ggsave("curvesNscatters/scores_distributions_facet2.png",
        width = 10, height = 10)
 
-
-
 ## Scatters
 #asmtuple
-p1 <- ggplot(xtab, aes(asm_tuple,derTrue_asm)) +
-  geom_point(color = myColor[1]) +
-  geom_point(data=xtab_impr, aes(asm_tuple,derTrue_asm), color = myColor[6]) +
+p1 <- ggplot(xtabsub) +
+  geom_bin2d(aes(ASMtuple,ASMsnp)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') +
+  geom_smooth(aes(ASMtuple,ASMsnp), color = "darkgray") +
   scale_x_continuous(trans='sqrt') +
   scale_y_continuous(trans='sqrt') +
   facet_wrap(~coverage) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
-        panel.spacing = unit(0, "lines"))+
-  labs(title = "ASMtuple", x = "ASMtuple", y = "ASMsnp")
-
-#allelicmeth
-p2 <- ggplot(xtab, aes(allelicmeth,derTrue_asm)) +
-  geom_point(color = myColor[3]) +
-  geom_point(data=xtab_impr, aes(allelicmeth,derTrue_asm), color = myColor[6]) +
-  scale_x_continuous(trans='sqrt') +
-  scale_y_continuous(trans='sqrt') +
-  facet_wrap(~coverage) +
-  theme_bw() + 
-  theme(strip.background = element_rect(colour = "black", fill = "white"),
-        panel.spacing = unit(0, "lines")) +
-  labs(title = "allelicmeth", x = "allellicmeth", y = "ASMsnp")
+        panel.spacing = unit(0, "lines"))
 
 #beta
-p3 <-  ggplot(xtab, aes(beta,derTrue_asm)) +
-  geom_point(color = myColor[2]) +
-  geom_point(data=xtab_impr, aes(beta,derTrue_asm), color = myColor[6]) +
+p2 <- ggplot(xtabsub) +
+  geom_bin2d(aes(methdeviation,ASMsnp)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') +
+  geom_smooth(aes(methdeviation,ASMsnp), color = "darkgray") +
   scale_x_continuous(trans='sqrt') +
   scale_y_continuous(trans='sqrt') +
   facet_wrap(~coverage) +
   theme_bw() + 
   theme(strip.background = element_rect(colour = "black", fill = "white"),
-        panel.spacing = unit(0, "lines")) +
-  labs(title = "Scaled beta", x = "scaled beta", y = "ASMsnp")
+        panel.spacing = unit(0, "lines")) 
 
-p4 <- cowplot::plot_grid(p1,p2,p3, ncol=1, nrow = 3, align="v")
-ggplot2::ggsave("curvesNscatters/scoreScatters_withimpr.png", p4, width = 12, height = 12)
+#allelicmeth
+p3 <-  ggplot(xtabsub) +
+  geom_bin2d(aes(allelicmeth,ASMsnp)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') +
+  geom_smooth(aes(allelicmeth,ASMsnp), color = "darkgray") +
+  scale_x_continuous(trans='sqrt') +
+  scale_y_continuous(trans='sqrt') +
+  facet_wrap(~coverage) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines"))
+
+#allelicmeth
+p3b <-  ggplot(xtabsub) +
+  geom_bin2d(aes(amrfinder,ASMsnp)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') +
+  #geom_smooth(aes(amrfinder,ASMsnp), color = "darkgray") +
+  scale_x_continuous(trans='sqrt') +
+  scale_y_continuous(trans='sqrt') +
+  facet_wrap(~coverage) +
+  theme_bw() + 
+  theme(strip.background = element_rect(colour = "black", fill = "white"),
+        panel.spacing = unit(0, "lines"))
+
+p4 <- cowplot::plot_grid(p1,p2,p3,p3b, ncol=1, nrow = 4, align="v",labels = c("A","B","C","D"))
+ggplot2::ggsave("curvesNscatters/scoreScatters_hex.png", p4, width = 10, height = 10)
 
 ### Make curve ####-------------------------------------------------------------------------
 

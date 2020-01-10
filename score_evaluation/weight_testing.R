@@ -47,7 +47,7 @@ p1 <- ggplot(asms_df_long) + #test facets?
   scale_color_manual(values = myColor) +
   scale_fill_manual(values = myColor) +
   theme_bw()
-ggsave("curvesNscatters/tupleASM_betas_hist.png", p1, width = 8, height = 6)
+#ggsave("curvesNscatters/tupleASM_betas_hist.png", p1, width = 8, height = 6)
 
 #set epsilon, cannot go above 0.5 since it's a value added or deleted from 0.5, 
 #to result in a quantile 
@@ -67,7 +67,7 @@ asms_df <- as.data.frame(asms)
 asms_df_long <- reshape2::melt(asms_df, value.name = "ASMtuple")
 head(asms_df_long)
 
-p1 <- ggplot(asms_df_long) + 
+p2 <- ggplot(asms_df_long) + 
   geom_histogram(aes(ASMtuple, color = variable, fill = variable), alpha = 0.2) +
   scale_x_continuous(trans='sqrt') +
   scale_y_continuous(trans='sqrt') +
@@ -76,4 +76,6 @@ p1 <- ggplot(asms_df_long) +
   scale_color_manual(values = myColor) +
   scale_fill_manual(values = myColor) +
   theme_bw()
-ggsave("curvesNscatters/tupleASM_epsilon_hist.png", p1, width = 8, height = 6)
+
+a <- cowplot::plot_grid(p1,p2, ncol=1, nrow = 2, labels = c("A","B"))
+ggsave("curvesNscatters/tupleASM_weight_gammaANDepsilon.png", a, width = 6, height = 7.5)
