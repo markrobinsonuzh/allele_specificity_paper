@@ -16,7 +16,7 @@ library(ggplot2)
 
 ####Get ASM score ####---------------------------------------------------------------------
 load("data/derASM_fullcancer2.RData") #single site derived-true asm
-load("data/tupleASM_fullCancer.RData") #tuple derived-true asm
+load("data/tupleASM_fullCancer.RData") #tuple asm
 load("data/tuplederASM_fullCancer2.RData") #<-- from generateTupleTables.R script
 
 keyGR <- rowRanges(derASM) #1,453,873
@@ -25,7 +25,7 @@ rm(derASM)
 
 asmscoreGR <- rowRanges(ASM) #3,589,472
 over <- findOverlaps(asmscoreGR, keyGR)
-ASM <- ASM[unique(sort(queryHits(over))),] #820,106
+ASM <- ASM[unique(sort(queryHits(over))),] #957,310
 
 asmscoreGR <- rowRanges(ASM)
 

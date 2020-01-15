@@ -40,7 +40,7 @@ slopGR <- promoters(locsGR, upstream=1000, downstream=10)
  
 
 #get full ASM mat
-load("malevsfem_ASM_mat.RData")
+#load("malevsfem_ASM_mat.RData")
 
 #filter
 
@@ -77,7 +77,7 @@ myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 
 impr <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
-              trim = FALSE, adjust = 2, scale = "width") +
+              trim = FALSE, adjust = 2) +# scale = "width") +
   geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
                 alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
