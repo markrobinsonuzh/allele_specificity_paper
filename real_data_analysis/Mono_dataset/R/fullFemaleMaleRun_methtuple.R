@@ -30,7 +30,7 @@ sample_names <- c("C000S5", "C001UY", "S000RD", "C0010K", "C004SQ", "C005PS")
 tuple_list <- read_tuples(files = tuple_files, sample_names, minCoverage = 5)
 ASM_mat <- calc_asm(sampleList = tuple_list) #6,802,057
 #save(ASM_mat, file="malevsfem_ASM_mat.RData")
-#load("malevsfem_ASM_mat.RData")
+load("malevsfem_ASM_mat.RData")
 
 #Filter
 ASM_mat <- ASM_mat[rowSums(
@@ -65,7 +65,7 @@ e <- get_e(ASM_mat)
 myColor <- RColorBrewer::brewer.pal(9, "Set1")[3:4]
 pfull <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
-              trim = FALSE, adjust = 1.5, scale = "width") +
+              trim = FALSE, adjust = 1.5)+ #, scale = "width") +
   geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
                alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
@@ -134,7 +134,7 @@ e$chr <- ifelse(e$chr == "chr3", "chr3 (promoters)", e$chr)
 
 pprom <- ggplot(e) +
   geom_violin(aes(x=sample, y=valueasm, fill=Gender, color = Gender),
-              trim = FALSE, adjust = 1.5, scale = "width") +
+              trim = FALSE, adjust = 1.5) +# scale = "width") +
   geom_boxplot(aes(x=sample, y=valueasm, fill=Gender), color = "grey",
                 alpha = 0,outlier.shape = NA) +
   scale_y_continuous(trans='sqrt') +
@@ -153,7 +153,7 @@ p4 <- cowplot::plot_grid(pfull, pprom, impr, ncol=1, nrow = 3,
                          labels = c("A","B","C"),
                          align = "v",
                          axis = "lr")
-ggplot2::ggsave("curvesNscatters/chromboxplots_cow_opt3.png", p4, 
+ggplot2::ggsave("curvesNscatters/chromboxplots_cow_noscalewidth.png", p4, 
                 width = 10, height = 13)
 
 #### make bigwigs ####

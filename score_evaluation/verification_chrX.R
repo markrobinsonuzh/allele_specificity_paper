@@ -19,7 +19,7 @@ ASM_mat <- ASM_mat[rowSums(
   !is.na(assays(ASM_mat)[["cov"]]) &
     assays(ASM_mat)[["cov"]] >= 10) == BiocGenerics::ncol(ASM_mat),]
 
-keyGR <- rowRanges(ASM_mat) #1,225,491
+keyGR <- rowRanges(ASM_mat) #3,198,678
 
 #read in allelicmeth score
 allelicfile <- "../../../Shared_s3it/sorjuela/EGAdata/EGAD00001002523/C0010K/C0010K.allelic"

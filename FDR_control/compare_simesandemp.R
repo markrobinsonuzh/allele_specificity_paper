@@ -29,9 +29,10 @@ tab <- data.frame(simes = c(-log10(sime_cimp$FDR[subjectHits(o)]),
 
 
 a <- ggplot(tab) + 
-  geom_point(aes(simes, empirical), alpha = 0.1) +
-  geom_abline(color = "blue") +
-  facet_grid(~val, scales = "free_y") +
+  geom_bin2d(aes(simes, empirical)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  geom_abline(color = "darkgray") +
+  facet_grid(~val) +
   theme_bw()
 
 o <- findOverlaps(emp_non, sime_non)
@@ -43,12 +44,13 @@ tab <- data.frame(simes = c(-log10(sime_non$FDR[subjectHits(o)]),
                                levels = c("pval", "FDR")))
 
 b <- ggplot(tab) + 
-  geom_point(aes(simes, empirical), alpha = 0.1) +
-  geom_abline(color = "blue") +
+  geom_bin2d(aes(simes, empirical)) + 
+  scale_fill_distiller(palette='RdBu', trans='log10') + 
+  geom_abline(color = "darkgray") +
   facet_grid(~val) +
   theme_bw()
-
+b
 cowplot::plot_grid(a,b, nrow = 2, ncol = 1, labels = c("A", "B"))
-ggsave("curvesNscatters/simesVsemp_both.png")
+ggsave("curvesNscatters/simesVsemp_both.png", width = 6, height = 6)
 
 

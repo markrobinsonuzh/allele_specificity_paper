@@ -4,6 +4,7 @@
 .Ruserdata
 MCircle_plots
 curvesNscatters
-*.RData
+.RData
 *.bed*
 *.xlsx
+data/data_extra/*
